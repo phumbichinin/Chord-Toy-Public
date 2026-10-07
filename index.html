@@ -6,6 +6,9 @@
       content="width=device-width, initial-scale=1.0,
                maximum-scale=1.0, user-scalable=no,
                viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
 
 <title>Chord Toy ver.11.1</title>
 
@@ -51,8 +54,16 @@ body {
         opacity 0.12s ease;
 }
 
-/* Right-hand slide owns its touch gesture; other page areas retain scrolling. */
-#rh-piano, #rh-piano .piano-key { touch-action: none; }
+/* Keyboard performance owns pan/zoom gestures; other page areas retain scrolling.
+   Container dblclick defaults are also suppressed without changing pointer input. */
+#lh-piano, #rh-piano,
+#lh-piano .piano-key, #rh-piano .piano-key {
+    touch-action: none;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
+}
 
 /* Press feedback only: semantic/future classes remain intact while held. */
 .piano-key:active,
@@ -464,7 +475,7 @@ body {
 
     <!-- LH Keyboard -->
     <div class="lh-keyboard-area">
-        <div id="lh-piano" class="relative w-full h-44 bg-slate-950 rounded-xl border border-slate-800 p-2 shadow-inner"></div>
+        <div id="lh-piano" ondblclick="event.preventDefault()" class="relative w-full h-44 bg-slate-950 rounded-xl border border-slate-800 p-2 shadow-inner"></div>
     </div>
 
     <!-- Quality Modifiers -->
@@ -488,7 +499,7 @@ body {
     </div>
 
     <!-- RH Keyboard -->
-    <div id="rh-piano" class="relative w-full h-44 bg-slate-950 rounded-xl border border-slate-800 p-2 shadow-inner"></div>
+    <div id="rh-piano" ondblclick="event.preventDefault()" class="relative w-full h-44 bg-slate-950 rounded-xl border border-slate-800 p-2 shadow-inner"></div>
 
     <!-- Legend -->
     <div class="keyboard-legend">
