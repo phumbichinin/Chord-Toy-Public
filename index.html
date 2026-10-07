@@ -79,6 +79,27 @@ body {
     font-weight: 900;
 }
 
+/* FREE CHORD GUIDANCE CSS BEGIN: optional chord choices, distinct from fixed NEXT. */
+.lh-free-candidate {
+    background: #e0e7f2 !important;
+    color: #334155 !important;
+    border-color: #a5b4cc !important;
+    box-shadow: inset 0 0 0 1px #a5b4cc;
+}
+.piano-key.absolute.lh-free-candidate {
+    background: #334155 !important;
+    color: #cbd5e1 !important;
+}
+.free-chord-quality {
+    position: absolute;
+    bottom: 24px;
+    font-size: 8px;
+    font-weight: 500;
+    pointer-events: none;
+    opacity: 0.8;
+}
+/* FREE CHORD GUIDANCE CSS END. */
+
 .lh-connect {
     background: #818cf8 !important;
     color: #1e1b4b !important;
@@ -2174,10 +2195,7 @@ function togglePresetLoop() {
 function seekPresetHarmonySection(sectionIndex, timestamp = performance.now()) {
     const playback = getPresetHarmonyPlayback();
     const occurrence = getHarmonySectionOccurrence(getResolvedPresetHarmonyTimeline(), sectionIndex, playback.cycleIndex);
-    setPresetPlaybackPosition(occurrence.absoluteStartBeat, timestamp);
-    state.presetPlayback.tickPending = true;
-    restartAccompanimentScheduling(true); // R6: explicit seek, not Resume
-    updateUI();
+    seekPresetHarmonyOccurrence(occurrence, timestamp);
 }
 
 function getHarmonyFromOccurrence(occurrence) {
@@ -2621,6 +2639,9 @@ class AudioEngine {
             voice.sources.forEach(source => source.stop(now));
             return;
         }
+        const manual = voice.owner === "manual-left" || voice.owner === "manual-right";
+        const releaseSeconds = manual ? 0.45 : 0.18;
+        const stopSeconds = manual ? 0.47 : 0.2;
         voice.gains.forEach(node => {
             const param = node.gain;
             if (param.cancelAndHoldAtTime) param.cancelAndHoldAtTime(now);
@@ -2629,10 +2650,10 @@ class AudioEngine {
                 param.cancelScheduledValues(now);
                 param.setValueAtTime(value, now);
             }
-            // Provisional tail; hardware/listening adjustment remains open.
-            param.exponentialRampToValueAtTime(0.0001, now + 0.18);
+            // Initial manual release tuning; held attack/sustain and other owners stay unchanged.
+            param.exponentialRampToValueAtTime(0.0001, now + releaseSeconds);
         });
-        voice.sources.forEach(source => source.stop(now + 0.2));
+        voice.sources.forEach(source => source.stop(now + stopSeconds));
     }
 
     releaseVoiceGroup(groupId) {
@@ -2909,9 +2930,26 @@ class AudioEngine {
             const root = noteIndex(event.harmony.root);
             CHORD_TYPES[event.harmony.quality].semitones.forEach((interval,index) => {
                 const pitch = root + interval;
-                this.startTone(NOTE_NAMES[pitch % 12],3 + Math.floor(pitch / 12),event.duration,
-                    group.snapshot.timbre,event.velocity,groupId,false,
-                    audioTime + index * (event.strumDelaySeconds ?? 0));
+                const startTime = audioTime + index * (event.strumDelaySeconds ?? 0);
+                const voiceId = this.startTone(NOTE_NAMES[pitch % 12],3 + Math.floor(pitch / 12),
+                    event.sustainGate ? Math.min(0.8,event.duration / 3) : event.duration,
+                    group.snapshot.timbre,event.velocity,groupId,!!event.sustainGate,startTime);
+                if (event.sustainGate && voiceId !== null) {
+                    const voice = this.voices.get(voiceId);
+                    const endTime = audioTime + event.duration;
+                    const fadeStart = Math.max(startTime, endTime - Math.min(0.18,event.duration / 2));
+                    voice.gains.forEach((node,gainIndex) => {
+                        const param = node.gain;
+                        if (param.cancelAndHoldAtTime) param.cancelAndHoldAtTime(fadeStart);
+                        else param.cancelScheduledValues(fadeStart);
+                        // An explicit plateau anchor prevents the final exponential ramp
+                        // from starting at the earlier decay endpoint instead of fadeStart.
+                        param.setValueAtTime(event.velocity * (gainIndex === 1 ? 0.04 : 0.12),fadeStart);
+                        param.exponentialRampToValueAtTime(0.0001,endTime);
+                    });
+                    voice.sources.forEach(source=>source.stop(endTime + 0.02));
+                    voice.status = "releasing"; // Audio automation owns note-off, not JS timers.
+                }
             });
         } else if (event.part === "bass") {
             // Literal source bass remains on event.bass; transposition semantics are not guessed.
@@ -2940,7 +2978,10 @@ function createRhythmCompatibilityStyle(rhythmKey, rhythm) {
         id: `${part}:${instrument || 'notes'}:${index}`, part, instrument,
         offsetBeat: step / rhythm.stepsPerBeat, duration, durationUnit: "seconds",
         velocity, velocityUnit: "legacy-gain", audioOffsetBeat: 0,
-        ...(part === "chord" ? { strumDelaySeconds: 0.015 } : {})
+        ...(part === "chord" ? { strumDelaySeconds: 0.015 } : {}),
+        ...(rhythmKey === "SUSTAIN" && part !== "drum" ? { followHarmonyChanges: true } : {}),
+        ...(part === "chord" && rhythmKey === "SUSTAIN" ? { gatePolicy: "next-attack-95" } : {}),
+        ...(part === "chord" && rhythmKey === "PULSE_13" ? { gatePolicy: "pulse-1.8-beats" } : {})
     }));
     const drumDefaults = { kick: [0.13,0.45], snare: [0.1,0.2], hat: [0.03,0.06], clap: [0.08,0.25] };
     return freezeResolvedHarmonyData({ id: `rhythm:${rhythmKey}`, rhythmKey,
@@ -3035,10 +3076,11 @@ function isStyleCompatibleWithMeter(style, meter) {
         style.barBeats === getHarmonyTimelineEndBeat(meter, 1);
 }
 
-function generateAccompanimentEvents({ timeline, style, policy, key, fromBeat, toBeat }) {
+function generateAccompanimentEvents({ timeline, style, policy, key, fromBeat, toBeat, secondsPerBeat = 60 / 90 }) {
     if (!isStyleCompatibleWithMeter(style, timeline.meter)) throw new RangeError("Incompatible accompaniment meter");
-    if (!Number.isFinite(fromBeat) || !Number.isFinite(toBeat) || toBeat < fromBeat || noteIndex(key) < 0)
-        throw new RangeError("Invalid accompaniment window/key");
+    if (!Number.isFinite(fromBeat) || !Number.isFinite(toBeat) || toBeat < fromBeat || noteIndex(key) < 0 ||
+        !Number.isFinite(secondsPerBeat) || secondsPerBeat <= 0)
+        throw new RangeError("Invalid accompaniment window/key/tempo");
     const events = [], patterns = [style.chordStyle,style.bassStyle,style.drumStyle].flatMap(part=>part.events);
     const completion = policy.loopEnabled ? Infinity : ((policy.stopAfterCycle ?? 0) + 1) * timeline.endBeat;
     if (!validatePlaybackPolicy(policy).valid) throw new RangeError("Invalid accompaniment policy");
@@ -3049,6 +3091,10 @@ function generateAccompanimentEvents({ timeline, style, policy, key, fromBeat, t
             !Number.isFinite(pattern.audioOffsetBeat ?? 0) || !Number.isFinite(pattern.duration) || pattern.duration <= 0 ||
             !Number.isFinite(pattern.velocity) || pattern.velocity < 0 || pattern.velocity > 1 ||
             pattern.durationUnit !== "seconds" ||
+            (pattern.gatePolicy !== undefined && (pattern.part !== "chord" ||
+                !["next-attack-95", "pulse-1.8-beats"].includes(pattern.gatePolicy))) ||
+            (pattern.followHarmonyChanges !== undefined &&
+                (typeof pattern.followHarmonyChanges !== "boolean" || pattern.part === "drum")) ||
             (pattern.relativeSemitones !== undefined && (pattern.part !== "bass" || !Number.isSafeInteger(pattern.relativeSemitones))) ||
             (pattern.part === "drum" && !["kick","snare","hat","clap"].includes(pattern.instrument)) ||
             (pattern.strumDelaySeconds !== undefined && (!Number.isFinite(pattern.strumDelaySeconds) || pattern.strumDelaySeconds < 0))) throw new RangeError("Invalid accompaniment pattern event");
@@ -3056,15 +3102,33 @@ function generateAccompanimentEvents({ timeline, style, policy, key, fromBeat, t
         const shift = pattern.audioOffsetBeat ?? 0;
         const firstBar = Math.max(0, Math.floor((fromBeat - shift - pattern.offsetBeat) / style.barBeats));
         const lastBar = Math.floor((toBeat - shift) / style.barBeats);
-        for (let bar = firstBar; bar <= lastBar; bar++) {
-            const timelineBeat = bar * style.barBeats + pattern.offsetBeat;
+        const attacks = new Set();
+        for (let bar = firstBar; bar <= lastBar; bar++) attacks.add(bar * style.barBeats + pattern.offsetBeat);
+        if (pattern.followHarmonyChanges) {
+            const firstCycle = Math.max(0, Math.floor((fromBeat - shift) / timeline.endBeat));
+            const lastCycle = Math.floor((toBeat - shift) / timeline.endBeat);
+            for (let cycle = firstCycle; cycle <= lastCycle; cycle++) {
+                for (const section of timeline.sections) attacks.add(cycle * timeline.endBeat + section.startBeat);
+            }
+        }
+        for (const timelineBeat of [...attacks].sort((a,b)=>a-b)) {
+            const bar = Math.floor(timelineBeat / style.barBeats);
             const audioBeat = timelineBeat + shift;
             if (timelineBeat >= completion || audioBeat >= completion || audioBeat < fromBeat || audioBeat >= toBeat) continue;
             const playback = deriveHarmonyPlaybackPosition(timeline, policy, timelineBeat);
             const occurrence = playback.currentOccurrence;
             const chordDefinition = copyHarmonyTimelineData(occurrence.chordDefinition);
             const root = NOTE_NAMES[(noteIndex(key) + chordDefinition.rootOffset) % 12];
-            events.push({ ...copyHarmonyTimelineData(pattern),
+            let gate = {};
+            if (pattern.gatePolicy) {
+                const nextAttackBeat = pattern.gatePolicy === "next-attack-95"
+                    ? (bar + 1) * style.barBeats : timelineBeat + 2;
+                const availableBeats = Math.min(nextAttackBeat, occurrence.absoluteEndBeat) - timelineBeat;
+                const durationBeats = pattern.gatePolicy === "next-attack-95"
+                    ? availableBeats * 0.95 : Math.min(1.8, availableBeats);
+                gate = { durationBeats, duration: durationBeats * secondsPerBeat, sustainGate: true };
+            }
+            events.push({ ...copyHarmonyTimelineData(pattern), ...gate,
                 id: JSON.stringify([occurrence.occurrenceId,bar,pattern.id,timelineBeat]),
                 styleId: style.id, owner: pattern.part === "drum" ? "drums" : "accompaniment",
                 timelineBeat, audioBeat, sectionId: occurrence.sectionId,
@@ -3175,6 +3239,7 @@ function getAccompanimentScheduleContext() {
     const pending = accompanimentStyleState.pendingStyle;
     const boundary = pending?.boundaryBeat ?? Infinity;
     return { timeline: getResolvedPresetHarmonyTimeline(), policy: state.playbackPolicy, key: state.key,
+        secondsPerBeat: 60 / state.bpm,
         position: getPresetRenderClockPosition(), terminal: getPresetHarmonyPlayback(getPresetRenderClockPosition()).terminal,
         styles: [{ style: getEffectiveAccompanimentStyle(), fromBeat: 0, toBeat: boundary },
             ...(pending ? [{ style: ACCOMPANIMENT_STYLES[pending.rhythmKey], fromBeat: boundary, toBeat: Infinity }] : [])] };
@@ -3242,7 +3307,8 @@ function resetAutoPlayTimer() {
 }
 function playFreeAccompanimentStep(position) {
     const context = { timeline: getResolvedPresetHarmonyTimeline(), style: getEffectiveAccompanimentStyle(),
-        policy: { loopEnabled: true }, key: state.key, fromBeat: position, toBeat: position + 0.000001 };
+        policy: { loopEnabled: true }, key: state.key, secondsPerBeat: 60 / state.bpm,
+        fromBeat: position, toBeat: position + 0.000001 };
     for (const event of generateAccompanimentEvents(context)) {
         // FREE retains its own current-chord/input behavior; no PRESET clock writes.
         const freeEvent = { ...event, harmony: { ...event.harmony, root: state.currentRoot, quality: state.currentQuality } };
@@ -3686,27 +3752,128 @@ function createLeftKey(note, isBlack) {
         : "piano-key flex-1 bg-slate-100 border border-slate-300 rounded-b-lg flex items-end justify-center pb-2 text-xs font-mono font-bold text-slate-900 relative";
 
     key.textContent = note;
+    const freeQuality = document.createElement("span");
+    freeQuality.className = "free-chord-quality";
+    key.appendChild(freeQuality);
 
     key.addEventListener("pointerdown", e => {
-        beginManualPointer(e, key, "manual-left", { root: note,
-            quality: state.mode === "FREE" ? state.currentQuality : getPresetManualInputQuality() },
-            timestamp => handleLeftKey(note, timestamp, true));
+        const next = getLeftNextSelection(key);
+        const quality = next ? getHarmonyFromOccurrence(next).quality :
+            state.mode === "FREE" ? getFreeManualInputQuality(note) : getPresetManualInputQuality();
+        beginManualPointer(e, key, "manual-left", { root: note, quality },
+            timestamp => handleLeftKey(note, timestamp, true, next));
     });
 
     bindManualRelease(key);
     return key;
 }
 
-function handleLeftKey(note, timestamp = performance.now(), held = false) {
+// FREE CHORD GUIDANCE BEGIN: v1 toy heuristics, not a prescribed progression.
+function deriveFreeChordGuidance({ currentHarmony, globalScale }) {
+    const pitches = deriveScalePitchClasses(globalScale);
+    const current = deriveChordMetadata(currentHarmony);
+    if (pitches.length !== 7) return freezeResolvedHarmonyData({
+        status: "unresolved", reason: "parent-scale-unspecified", candidates: [] });
+    const family = degree => [0,2,5].includes(degree) ? "tonic" :
+        [1,3].includes(degree) ? "predominant" : "dominant";
+    const currentDegree = pitches.indexOf(current.rootPitchClass);
+    const currentFamily = currentDegree < 0 ? null : family(currentDegree);
+    const currentTones = current.tones.map(t=>t.pitchClass);
+    const candidates = pitches.filter(pc=>pc !== current.rootPitchClass).map(pc=>{
+        const root = NOTE_NAMES[pc], natural = deriveNaturalChordQuality(root,globalScale);
+        if (!natural.resolved) return null;
+        const degree = pitches.indexOf(pc), nextFamily = family(degree);
+        const tones = deriveChordMetadata({ root, quality: natural.quality }).tones.map(t=>t.pitchClass);
+        const common = tones.filter(t=>currentTones.includes(t)).length;
+        const movement = (pc - current.rootPitchClass + 12) % 12;
+        const reasons = ["global-scale-natural-triad", `common-tones:${common}`];
+        let score = 10 + common;
+        // Relative scale-degree families; no root-name lookup or mandatory route.
+        if (currentFamily === "tonic") score += nextFamily === "tonic" ? 2 : 6;
+        if (currentFamily === "predominant") score += nextFamily === "dominant" ? 9 :
+            nextFamily === "predominant" ? 5 : 4;
+        if (currentFamily === "dominant") score += nextFamily === "tonic" ? 10 : 2;
+        if (currentFamily) reasons.push(`${currentFamily}-to-${nextFamily}`);
+        if (movement === 5) { score += 6; reasons.push("ascending-fourth"); }
+        else if (movement === 7) { score += 4; reasons.push("ascending-fifth"); }
+        else if ([8,9].includes(movement)) { score += 3; reasons.push("descending-third"); }
+        else if ([3,4].includes(movement)) { score += 2; reasons.push("ascending-third"); }
+        else if ([1,2,10,11].includes(movement)) { score += 1; reasons.push("stepwise-root"); }
+        if (currentFamily === "dominant" && nextFamily === "tonic" && movement === 2) {
+            score += 2; reasons.push("stepwise-tonic-alternative");
+        }
+        // Initial simplicity tuning; these chords remain playable and can still rank.
+        if (natural.quality === "dim" || natural.quality === "aug" || degree === 2) {
+            score -= 2; reasons.push("initial-simplicity-weight");
+        }
+        return { root, quality: natural.quality, score, reason: reasons.join("; "),
+            commonToneCount: common, degree: degree + 1 };
+    }).filter(Boolean);
+    candidates.sort((a,b)=>b.score-a.score || b.commonToneCount-a.commonToneCount || a.degree-b.degree);
+    return freezeResolvedHarmonyData({ status: "resolved", reason: "initial-diatonic-ranking",
+        candidates: candidates.slice(0,3) });
+}
+
+function getFreeChordGuidance() {
+    const scale = state.contexts.FREE.scale;
+    return deriveFreeChordGuidance({ currentHarmony: { root: state.currentRoot, quality: state.currentQuality },
+        globalScale: { key: scale.globalKey, scale: scale.globalScale } });
+}
+
+function getFreeManualInputQuality(root) {
+    if (noteIndex(root) === noteIndex(state.currentRoot)) return state.currentQuality;
+    const scale = state.contexts.FREE.scale;
+    const natural = deriveNaturalChordQuality(root,{ key: scale.globalKey, scale: scale.globalScale });
+    if (natural.resolved) return natural.quality;
+    if (natural.reason === "out-of-scale-root") return "Maj";
+    // No invented Pentatonic parent: retain the existing quality when unresolved.
+    return state.currentQuality;
+}
+// FREE CHORD GUIDANCE END.
+
+// IPAD NEXT BEGIN: displayed NEXT selection is an explicit Timeline command.
+function seekPresetHarmonyOccurrence(occurrence, timestamp = performance.now()) {
+    // Use the occurrence's absolute beat, including last -> first in the next cycle.
+    setPresetPlaybackPosition(occurrence.absoluteStartBeat, timestamp);
+    state.presetPlayback.tickPending = true;
+    restartAccompanimentScheduling(true);
+    updateUI();
+}
+
+function getLeftNextSelection(key) {
+    if (state.mode === "FREE" || !key.classList.contains("lh-next")) return null;
+    const next = getPresetHarmonyPlayback().nextOccurrence;
+    // A stale painted NEXT is never reinterpreted as a different occurrence.
+    if (!next || key.dataset.nextOccurrenceId !== next.occurrenceId ||
+        noteIndex(key.dataset.note) !== noteIndex(getHarmonyFromOccurrence(next).root)) return null;
+    return next;
+}
+// IPAD NEXT END.
+
+function handleLeftKey(note, timestamp = performance.now(), held = false, nextOccurrence = null) {
     if (state.mode === "FREE") {
+        const quality = getFreeManualInputQuality(note);
         state.currentRoot = note;
-        const groupId = held ? audio.startChordGroup(note, 3, state.currentQuality, { timestamp })
+        state.currentQuality = quality;
+        const groupId = held ? audio.startChordGroup(note, 3, quality, { timestamp })
             : audio.playChord(note, 3, state.currentQuality);
         latestManualLeftGroupId = groupId;
         updateUI();
         return groupId;
     }
 
+    if (nextOccurrence !== null) {
+        const next = getHarmonyFromOccurrence(nextOccurrence);
+        seekPresetHarmonyOccurrence(nextOccurrence);
+        clearManualHarmony("PRESET"); // Explicit NEXT selects the source chord, not an override.
+        state.currentRoot = next.root;
+        state.currentQuality = next.quality;
+        const groupId = held ? audio.startChordGroup(next.root, 3, next.quality, { timestamp })
+            : audio.playChord(next.root, 3, next.quality);
+        latestManualLeftGroupId = groupId;
+        updateUI();
+        return groupId;
+    }
     const quality = getPresetManualInputQuality();
     activateManualHarmony(note, quality, "PRESET", timestamp);
     // Keep the legacy left-root label in sync; Quality input has its own source.
@@ -3725,9 +3892,8 @@ function advanceChord() {
     } else {
         const next = getPresetHarmonyPlayback().nextOccurrence;
         if (next === null) return;
-        setPresetPlaybackPosition(next.absoluteStartBeat);
-        state.presetPlayback.tickPending = true;
-        restartAccompanimentScheduling(true); // R6: explicit NEXT seek
+        seekPresetHarmonyOccurrence(next);
+        clearManualHarmony("PRESET"); // Explicit NEXT also wins when input timestamps are equal.
     }
     const current = getAccompanimentHarmony();
 
@@ -3890,21 +4056,30 @@ function updateLeftKeyHighlights() {
     // LH CURRENT stays accompaniment-based; manual CURRENT is a separate card.
     const current = getAccompanimentHarmony();
     const next = getNextStep();
+    const nextOccurrence = state.mode === "FREE" ? null : getPresetHarmonyPlayback().nextOccurrence;
     const context = {
         currentPitchClass: noteIndex(state.mode === "FREE" ? state.currentRoot : current.root),
         nextPitchClass: state.mode === "FREE" || next === null ? null : noteIndex(next.root),
         connectorPitchClasses: state.mode === "FREE" ? [] :
             getConnectingChordCandidates().map(c => noteIndex(c.root))
     };
+    const freeCandidates = state.mode === "FREE" ? getFreeChordGuidance().candidates : [];
     const keys = document.querySelectorAll('[data-hand="lh"]');
     keys.forEach(key => {
         const visual = deriveLeftKeyVisualState(noteIndex(key.dataset.note), context, key.classList.contains("active"));
         key.classList.toggle("lh-current", visual.semanticRole === "current");
         key.classList.toggle("lh-next", visual.semanticRole === "next");
         key.classList.toggle("lh-connect", visual.semanticRole === "connector");
+        const candidate = freeCandidates.find(c=>noteIndex(c.root) === noteIndex(key.dataset.note));
+        key.classList.toggle("lh-free-candidate", !!candidate);
+        key.dataset.freeCandidateQuality = candidate?.quality || "";
+        const label = Array.from(key.children).find(c=>c.classList.contains("free-chord-quality"));
+        label.textContent = candidate ? `候補 ${candidate.quality}` : "";
+        key.setAttribute("aria-label", candidate ? `${key.dataset.note} ${candidate.quality} 次コード候補` : key.dataset.note);
         // Preserve overlaps separately from the legacy background precedence.
         key.dataset.currentRoot = String(visual.current);
         key.dataset.nextRoot = String(visual.next);
+        key.dataset.nextOccurrenceId = visual.next && nextOccurrence ? nextOccurrence.occurrenceId : "";
         key.dataset.connectingRoot = String(visual.connector);
     });
 
