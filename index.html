@@ -432,6 +432,10 @@ body {
 .explorer-item span { display: block; font-size: 11px; color: #94a3b8; margin-top: 3px; }
 .explorer-path { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; font-size: 12px; }
 .explorer-path button { min-height: 36px; padding: 4px 8px; border: 1px solid #475569; border-radius: 6px; }
+.explorer-navigation { display: flex; align-items: flex-start; gap: 6px; }
+.explorer-navigation .explorer-path { flex: 1; min-width: 0; }
+#explorer-back { flex-shrink: 0; min-width: 44px; text-align: center; }
+#explorer-back[hidden] { display: none; }
 .catalog-bridge { display: none; }
 .music-controls { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
 .music-controls label { font-size: 11px; color: #94a3b8; }
@@ -463,7 +467,7 @@ body {
                 </button><button id="mode-free" onclick="setMode('FREE')" class="px-3 py-1 rounded-md text-slate-400">
                     自由
                 </button></div>
-        <button id="settings-toggle" type="button" onclick="openSettingsSheet(this)" aria-controls="settings-sheet" aria-expanded="false">設定</button>
+        <button id="settings-toggle" type="button" onclick="openSettingsSheet(this)" aria-controls="settings-sheet" aria-expanded="false">プリセット</button>
     </div>
 </header>
 
@@ -564,9 +568,9 @@ body {
 <div id="settings-backdrop" class="settings-backdrop" data-open="false" aria-hidden="true" onclick="closeSettingsSheet()"></div>
 <section id="settings-sheet" class="settings-sheet" data-open="false" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="settings-sheet-title" onkeydown="handleSettingsSheetKey(event)">
  <div class="sheet-handle" aria-hidden="true"></div>
- <header class="sheet-header"><h2 id="settings-sheet-title">プリセット・設定</h2><button id="settings-close" type="button" onclick="closeSettingsSheet()">閉じる</button></header>
+ <header class="sheet-header"><h2 id="settings-sheet-title">プリセット</h2><button id="settings-close" type="button" onclick="closeSettingsSheet()">閉じる</button></header>
  <div id="advanced-controls" class="sheet-scroll">
-  <section id="preset-explorer" class="sheet-group"><h3>PRESET</h3><button id="explorer-current" class="explorer-item" type="button" onclick="showExplorerStage('preset', state.catalogLayer, state.catalogCategory)"></button><nav id="explorer-path" class="explorer-path" aria-label="プリセットの階層"></nav><div id="explorer-list" class="explorer-list"></div><div class="catalog-bridge" aria-hidden="true"><select id="catalog-layer" onchange="changeCatalogLayer()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 outline-none"></select><select id="catalog-category" onchange="changeCatalogCategory()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 outline-none"></select><select id="preset-select" onchange="loadPresetFromUI()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 outline-none"></select></div><div id="catalog-status" class="mt-2 text-[10px] text-purple-400"></div></section>
+  <section id="preset-explorer" class="sheet-group"><h3>PRESET</h3><button id="explorer-current" class="explorer-item" type="button" onclick="showExplorerStage('preset', state.catalogLayer, state.catalogCategory)"></button><div class="explorer-navigation"><button id="explorer-back" class="explorer-item" type="button" onclick="handleExplorerBack()" aria-label="一つ上の階層へ戻る" hidden>←</button><nav id="explorer-path" class="explorer-path" aria-label="プリセットの階層"></nav></div><div id="explorer-list" class="explorer-list"></div><div class="catalog-bridge" aria-hidden="true"><select id="catalog-layer" onchange="changeCatalogLayer()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 outline-none"></select><select id="catalog-category" onchange="changeCatalogCategory()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 outline-none"></select><select id="preset-select" onchange="loadPresetFromUI()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 outline-none"></select></div><div id="catalog-status" class="mt-2 text-[10px] text-purple-400"></div></section>
   <section class="sheet-group"><h3>MUSIC</h3><div class="music-controls"><label>KEY<select id="key-select" onchange="changeKey()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 outline-none"></select></label><label>Style / Rhythm<select id="rhythm-select" onchange="changeRhythm()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 outline-none"></select></label><label>BPM<input id="bpm-input" type="number" min="40" max="240" value="90" onchange="changeBpm()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-amber-300 font-mono outline-none"></label></div></section>
   <section class="sheet-group"><h3>SOUND</h3><div class="sound-controls"><label for="timbre-select">音色</label><select id="timbre-select" onchange="changeTimbre()" class="bg-slate-950 border border-slate-800 rounded-lg px-2 py-1.5 text-xs text-slate-200 outline-none">
                 <option value="piano">🎹 ピアノ</option>
@@ -3085,6 +3089,81 @@ function setAudioLatencyMeasurementEnabled(enabled = true) {
 }
 // AUDIO LATENCY END.
 
+// AUDIO BALANCE BEGIN: sound-only voicing and provisional listening parameters.
+// Theory/Guidance continue to read CHORD_TYPES and CHORD_ROLES, including the fifth.
+const CHORD_VOICINGS = Object.freeze(Object.fromEntries(Object.entries({
+    "9": [[0,0],[4,0],[10,0],[14,0]],
+    Maj9: [[0,0],[4,0],[11,0],[14,0]],
+    m9: [[0,0],[3,0],[10,0],[14,0]],
+    "11": [[0,0],[4,0],[10,0],[14,0],[17,0]],
+    "13": [[0,0],[4,0],[10,0],[14,-1],[21,-1]],
+    "Maj7#11": [[0,0],[4,0],[11,0],[18,0]]
+}).map(([quality, tones]) => [quality, Object.freeze(tones.map(([interval, octaveShift]) =>
+    Object.freeze({ interval, octaveShift })))])));
+
+function getChordVoicingIntervals(quality) {
+    if (!Object.hasOwn(CHORD_TYPES, quality)) throw new RangeError("Unknown voicing quality");
+    return (CHORD_VOICINGS[quality] ?? CHORD_TYPES[quality].semitones.map(interval =>
+        ({ interval, octaveShift: 0 }))).map(tone => ({ ...tone }));
+}
+
+function getChordVoicingPitches(root, octave, quality) {
+    const rootPitch = noteIndex(root);
+    if (rootPitch < 0 || !Number.isInteger(octave) || octave < 0 || octave > 8)
+        throw new RangeError("Invalid voicing root/octave");
+    return getChordVoicingIntervals(quality).map(({ interval, octaveShift }) => {
+        const pitch = rootPitch + interval + octaveShift * 12;
+        const toneOctave = octave + Math.floor(pitch / 12);
+        return { note: NOTE_NAMES[((pitch % 12) + 12) % 12], octave: toneOctave,
+            midi: (octave + 1) * 12 + pitch };
+    });
+}
+
+const MIX_BALANCE = Object.freeze({
+    baseVelocity: Object.freeze({ tone: 0.25, manualMelody: 0.30, manualChord: 0.18,
+        manualBass: 0.18, accompanimentChord: 0.18, accompanimentBass: 0.35 }),
+    partGain: Object.freeze({ "manual-melody": 1.00, "manual-chord": 1.00,
+        "manual-bass": 1.35, "accompaniment-chord": 1.20, "accompaniment-bass": 1.35 }),
+    octaveGain: Object.freeze({ 1: 1.30, 2: 1.25, 3: 1.12, 4: 1.00, 5: 0.93, 6: 0.90 }),
+    melodyRegisterStrength: 0.5,
+    maxVelocity: 0.95
+});
+const SUSTAIN_BASS_GATE = Object.freeze({ maxSeconds: 1.0, sectionFraction: 0.45 });
+
+function getRegisterGain(octave, mixRole) {
+    if (!Object.hasOwn(MIX_BALANCE.partGain, mixRole) ||
+        !Number.isInteger(octave) || octave < 0 || octave > 8)
+        throw new RangeError("Invalid mix role/octave");
+    // Edge registers use the nearest configured value, without extrapolation.
+    const gain = MIX_BALANCE.octaveGain[Math.max(1, Math.min(6, octave))];
+    return 1 + (gain - 1) * (mixRole === "manual-melody" ? MIX_BALANCE.melodyRegisterStrength : 1);
+}
+
+function getMixGain({ mixRole, octave, baseVelocity }) {
+    if (!Number.isFinite(baseVelocity) || baseVelocity < 0)
+        throw new RangeError("Invalid base velocity");
+    const registerGain = getRegisterGain(octave, mixRole);
+    return Math.min(MIX_BALANCE.maxVelocity, baseVelocity * MIX_BALANCE.partGain[mixRole] * registerGain);
+}
+
+function resolveToneMixRole(group) {
+    if (group.snapshot.mixRole !== undefined) return group.snapshot.mixRole;
+    if (group.owner === "manual-right") return "manual-melody";
+    if (group.owner === "manual-left") return "manual-chord";
+    if (group.owner === "accompaniment") return group.snapshot.part === "bass"
+        ? "accompaniment-bass" : "accompaniment-chord";
+    throw new RangeError("Tone owner requires an explicit mix role");
+}
+
+function deriveSustainBassDuration({ remainingBeats, secondsPerBeat }) {
+    if (!Number.isFinite(remainingBeats) || remainingBeats <= 0 ||
+        !Number.isFinite(secondsPerBeat) || secondsPerBeat <= 0)
+        throw new RangeError("Invalid bass gate duration/tempo");
+    return Math.min(SUSTAIN_BASS_GATE.maxSeconds,
+        remainingBeats * secondsPerBeat * SUSTAIN_BASS_GATE.sectionFraction);
+}
+// AUDIO BALANCE END.
+
 class AudioEngine {
     constructor() {
         this.ctx = null;
@@ -3219,26 +3298,29 @@ class AudioEngine {
             .forEach(group => this.releaseVoiceGroup(group.groupId));
     }
 
-    playTone(note, octave, duration = 0.6, overrideTimbre = null, volume = 0.25, owner = "manual-right") {
-        const groupId = this.createVoiceGroup(owner, { note, octave });
+    playTone(note, octave, duration = 0.6, overrideTimbre = null, volume = MIX_BALANCE.baseVelocity.tone, owner = "manual-right", mixRole = null) {
+        const groupId = this.createVoiceGroup(owner, { note, octave, ...(mixRole === null ? {} : { mixRole }) });
         this.startTone(note, octave, duration, overrideTimbre, volume, groupId);
         this.finishVoiceGroup(groupId);
         return groupId;
     }
 
-    startTone(note, octave, duration = 0.6, overrideTimbre = null, volume = 0.25, groupId = null, held = false, audioTime = null) {
+    startTone(note, octave, duration = 0.6, overrideTimbre = null, volume = MIX_BALANCE.baseVelocity.tone, groupId = null, held = false, audioTime = null, options = {}) {
         if (!this.ctx || this.ctx.state !== "running") this.resume(); // R7-2.1: no running-context resume
         if (!this.ctx) return null;
         const group = this.groups.get(groupId);
         if (!group || group.status !== "active") return null;
 
+        const mixRole = options.mixRole ?? resolveToneMixRole(group);
+        const baseVelocity = volume;
+        volume = getMixGain({ mixRole, octave, baseVelocity });
         const timbre = overrideTimbre || state.timbre || "piano";
         const now = audioTime ?? this.ctx.currentTime;
         const osc = this.ctx.createOscillator();
         const gain = this.ctx.createGain();
 
         const voiceId = ++this.nextVoiceId;
-        const voice = { voiceId, groupId, owner: group.owner, note, octave,
+        const voice = { voiceId, groupId, owner: group.owner, note, octave, mixRole, baseVelocity, mixedVelocity: volume,
             startTime: now, status: "attack", sources: [osc], gains: [gain], nodes: [osc, gain] };
         this.voices.set(voiceId, voice);
         group.voiceIds.add(voiceId);
@@ -3329,16 +3411,15 @@ class AudioEngine {
             timbre: state.timbre, ...(bassNote === null ? {} : { bass: bassNote }) }, held);
         const group = this.groups.get(groupId);
         group.building = true;
-        const def = CHORD_TYPES[quality] || CHORD_TYPES.Maj;
-        const rootIdx = noteIndex(root);
+        const voicing = getChordVoicingPitches(root, octave, Object.hasOwn(CHORD_TYPES, quality) ? quality : "Maj");
         if (bassNote !== null) this.startTone(bassNote, Math.min(2, octave - 1),
-            0.8, group.snapshot.timbre, 0.18, groupId, held);
-        def.semitones.forEach((semitone, i) => {
-            const noteIdx = rootIdx + semitone;
+            0.8, group.snapshot.timbre, MIX_BALANCE.baseVelocity.manualBass, groupId, held, null,
+            { mixRole: "manual-bass" });
+        voicing.forEach((pitch, i) => {
             const trigger = () => {
                 if (group.status !== "active") return;
-                this.startTone(NOTE_NAMES[noteIdx % 12], octave + Math.floor(noteIdx / 12),
-                    0.8, group.snapshot.timbre, 0.18, groupId, held);
+                this.startTone(pitch.note, pitch.octave,
+                    0.8, group.snapshot.timbre, MIX_BALANCE.baseVelocity.manualChord, groupId, held);
                 this.finishVoiceGroup(groupId);
             };
             if (i === 0 || strumDelay === 0) trigger();
@@ -3357,7 +3438,7 @@ class AudioEngine {
     }
 
     playBass(root, octave = 2) {
-        return this.playTone(root, octave, 0.45, "piano", 0.35, "accompaniment");
+        return this.playTone(root, octave, 0.45, "piano", MIX_BALANCE.baseVelocity.accompanimentBass, "accompaniment", "accompaniment-bass");
     }
 
     trackDrum(source, gain, groupId = this.createVoiceGroup("drums"), startTime = this.ctx.currentTime) {
@@ -3476,11 +3557,9 @@ class AudioEngine {
         const group = this.groups.get(groupId);
         group.building = true;
         if (event.part === "chord") {
-            const root = noteIndex(event.harmony.root);
-            CHORD_TYPES[event.harmony.quality].semitones.forEach((interval,index) => {
-                const pitch = root + interval;
+            getChordVoicingPitches(event.harmony.root, 3, event.harmony.quality).forEach((pitch,index) => {
                 const startTime = audioTime + index * (event.strumDelaySeconds ?? 0);
-                const voiceId = this.startTone(NOTE_NAMES[pitch % 12],3 + Math.floor(pitch / 12),
+                const voiceId = this.startTone(pitch.note,pitch.octave,
                     event.sustainGate ? Math.min(0.8,event.duration / 3) : event.duration,
                     group.snapshot.timbre,event.velocity,groupId,!!event.sustainGate,startTime);
                 if (event.sustainGate && voiceId !== null) {
@@ -3493,7 +3572,7 @@ class AudioEngine {
                         else param.cancelScheduledValues(fadeStart);
                         // An explicit plateau anchor prevents the final exponential ramp
                         // from starting at the earlier decay endpoint instead of fadeStart.
-                        param.setValueAtTime(event.velocity * (gainIndex === 1 ? 0.04 : 0.12),fadeStart);
+                        param.setValueAtTime(voice.mixedVelocity * (gainIndex === 1 ? 0.04 : 0.12),fadeStart);
                         param.exponentialRampToValueAtTime(0.0001,endTime);
                     });
                     voice.sources.forEach(source=>source.stop(endTime + 0.02));
@@ -3530,15 +3609,16 @@ function createRhythmCompatibilityStyle(rhythmKey, rhythm) {
         ...(part === "chord" ? { strumDelaySeconds: 0.015 } : {}),
         ...(rhythmKey === "SUSTAIN" && part !== "drum" ? { followHarmonyChanges: true } : {}),
         ...(part === "chord" && rhythmKey === "SUSTAIN" ? { gatePolicy: "next-attack-95" } : {}),
-        ...(part === "chord" && rhythmKey === "PULSE_13" ? { gatePolicy: "pulse-1.8-beats" } : {})
+        ...(part === "chord" && rhythmKey === "PULSE_13" ? { gatePolicy: "pulse-1.8-beats" } : {}),
+        ...(part === "bass" && rhythmKey === "SUSTAIN" ? { bassGatePolicy: "section-45-percent-cap" } : {})
     }));
     const drumDefaults = { kick: [0.13,0.45], snare: [0.1,0.2], hat: [0.03,0.06], clap: [0.08,0.25] };
     return freezeResolvedHarmonyData({ id: `rhythm:${rhythmKey}`, rhythmKey,
         source: { kind: "rhythm-compatibility", rhythmKey },
         supportedMeters: [`${rhythm.beatsPerBar}/4`], barBeats: rhythm.beatsPerBar,
         // Separate arrays/objects, even where the compatibility attack times coincide.
-        chordStyle: { events: notes("chord", rhythm.chordHits, 0.8, 0.18) },
-        bassStyle: { events: notes("bass", rhythm.chordHits, 0.45, 0.35) },
+        chordStyle: { events: notes("chord", rhythm.chordHits, 0.8, MIX_BALANCE.baseVelocity.accompanimentChord) },
+        bassStyle: { events: notes("bass", rhythm.chordHits, 0.45, MIX_BALANCE.baseVelocity.accompanimentBass) },
         drumStyle: { events: Object.entries(drumDefaults).flatMap(([instrument,[duration,velocity]]) =>
             notes("drum", rhythm.drum[instrument] || [], duration, velocity, instrument)) }
     });
@@ -3642,6 +3722,8 @@ function generateAccompanimentEvents({ timeline, style, policy, key, fromBeat, t
             pattern.durationUnit !== "seconds" ||
             (pattern.gatePolicy !== undefined && (pattern.part !== "chord" ||
                 !["next-attack-95", "pulse-1.8-beats"].includes(pattern.gatePolicy))) ||
+            (pattern.bassGatePolicy !== undefined && (pattern.part !== "bass" ||
+                pattern.bassGatePolicy !== "section-45-percent-cap")) ||
             (pattern.followHarmonyChanges !== undefined &&
                 (typeof pattern.followHarmonyChanges !== "boolean" || pattern.part === "drum")) ||
             (pattern.relativeSemitones !== undefined && (pattern.part !== "bass" || !Number.isSafeInteger(pattern.relativeSemitones))) ||
@@ -3677,6 +3759,8 @@ function generateAccompanimentEvents({ timeline, style, policy, key, fromBeat, t
                     ? availableBeats * 0.95 : Math.min(1.8, availableBeats);
                 gate = { durationBeats, duration: durationBeats * secondsPerBeat, sustainGate: true };
             }
+            if (pattern.bassGatePolicy) gate = { duration: deriveSustainBassDuration({
+                remainingBeats: occurrence.absoluteEndBeat - timelineBeat, secondsPerBeat }) };
             events.push({ ...copyHarmonyTimelineData(pattern), ...gate,
                 id: JSON.stringify([occurrence.occurrenceId,bar,pattern.id,timelineBeat]),
                 styleId: style.id, owner: pattern.part === "drum" ? "drums" : "accompaniment",
@@ -4817,7 +4901,7 @@ function handleRightKey(note, octave, element, held = false, timestamp = perform
     let groupId;
     if (held) {
         groupId = audio.createVoiceGroup("manual-right", { note, octave, timestamp }, true);
-        audio.startTone(note, octave, 0.7, null, 0.3, groupId, true);
+        audio.startTone(note, octave, 0.7, null, MIX_BALANCE.baseVelocity.manualMelody, groupId, true);
     } else groupId = audio.playTone(note, octave, 0.7, null, 0.3);
     scheduleRightVisualRefresh(); // R7-2.1: coalesced presentation after synchronous audio
     return groupId;
@@ -4965,6 +5049,19 @@ function handleSettingsSheetKey(event) {
     }
 }
 
+// Explorer uses the existing three stages; no separate navigation history.
+function getParentExplorerStage(stage) {
+    if (stage === "preset") return "subcategory";
+    if (stage === "subcategory") return "category";
+    if (stage === "category") return null;
+    throw new RangeError("Unknown Explorer stage");
+}
+
+function handleExplorerBack() {
+    const parent = getParentExplorerStage(uiState.explorerStage);
+    if (parent !== null) showExplorerStage(parent);
+}
+
 function showExplorerStage(stage, layer = uiState.layer, category = uiState.category) {
     uiState.explorerStage = stage; uiState.layer = layer; uiState.category = category;
     renderPresetExplorer();
@@ -4975,6 +5072,7 @@ function showExplorerStage(stage, layer = uiState.layer, category = uiState.cate
 function renderPresetExplorer() {
     const path = document.getElementById("explorer-path"), list = document.getElementById("explorer-list");
     path.innerHTML = ""; list.innerHTML = "";
+    document.getElementById("explorer-back").hidden = getParentExplorerStage(uiState.explorerStage) === null;
     const button = (parent, title, description, current, action) => {
         const el = document.createElement("button"); el.type = "button"; el.className = "explorer-item";
         el.textContent = title; el.setAttribute("aria-current", String(current));
@@ -5007,7 +5105,9 @@ function selectExplorerPreset(id) {
     populateCatalogLayers();
     document.getElementById("preset-select").value = id;
     loadPresetFromUI();
-    closeSettingsSheet();
+    document.getElementById("explorer-current").textContent = "現在：" + getPreset().name + " — " + (getPreset().description || "");
+    renderPresetExplorer();
+    [...document.getElementById("explorer-list").children].find(item => item.dataset.presetId === id)?.focus?.({ preventScroll: true });
 }
 // R7-4 END.
 
