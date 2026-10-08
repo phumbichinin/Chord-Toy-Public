@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="mobile-web-app-capable" content="yes">
 
-<title>Chord Toy ver.11.1</title>
+<title>Chord Toy ver.11.2</title>
 
 <script src="https://cdn.tailwindcss.com"></script>
 
@@ -348,6 +348,21 @@ body {
         min-width: 52px;
     }
 }
+/* SLASH BASS CSS BEGIN */
+#bass-controls { margin-top: 8px; display: flex; align-items: center; gap: 8px; font-size: 11px; color: #94a3b8; }
+#bass-controls[hidden] { display: none; }
+#bass-select { min-height: 36px; padding: 4px 8px; border: 1px solid #334155; border-radius: 6px; background: #020617; color: #e2e8f0; }
+.slash-contextual { display: flex; flex-wrap: wrap; gap: 4px; }
+.slash-contextual button { min-height: 36px; margin-top: 4px; padding: 4px 8px; border: 1px solid #475569; border-radius: 6px; color: #cbd5e1; font-size: 11px; }
+/* SLASH BASS CSS END */
+
+/* QUALITY EXPANSION CSS BEGIN */
+#quality-advanced { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; margin-top: 4px; }
+#quality-advanced[hidden] { display: none; }
+#quality-more, #quality-advanced button { min-height: 36px; }
+#quality-more { margin-top: 4px; padding: 4px 10px; border: 1px solid #334155; border-radius: 6px; color: #94a3b8; font-size: 11px; }
+/* QUALITY EXPANSION CSS END */
+
 /* R7-3 CSS BEGIN: initial performance layout tuning, no key/marker semantics. */
 :root { --performance-gap: 10px; --lh-height: clamp(120px, 16vh, 140px); --rh-height: clamp(150px, 22vh, 190px); }
 .performance-header { position: sticky; top: 0; z-index: 60; background: #0f172af5; border-bottom: 1px solid #1e293b; padding: calc(6px + env(safe-area-inset-top)) 12px 6px; }
@@ -503,6 +518,14 @@ body {
     <div class="quality-controls">
         <div class="text-[9px] text-slate-500 font-bold mb-1">CHORD QUALITY</div>
         <div id="quality-buttons" class="grid grid-cols-5 gap-1"></div>
+        <div id="slash-contextual" class="slash-contextual" aria-label="Slash chord"></div>
+        <!-- QUALITY EXPANSION HTML BEGIN -->
+        <button id="quality-more" type="button" aria-expanded="false" aria-controls="quality-advanced" onclick="toggleAdvancedQuality()">さらに</button>
+        <div id="quality-advanced" class="grid grid-cols-5 gap-1" aria-label="Advanced Chord Quality" hidden></div>
+        <!-- QUALITY EXPANSION HTML END -->
+        <!-- SLASH BASS HTML BEGIN -->
+        <div id="bass-controls" hidden><label for="bass-select">Bass</label><select id="bass-select" onchange="selectInputBass(this.value)" aria-label="Bass指定"></select></div>
+        <!-- SLASH BASS HTML END -->
     </div>
 </section>
 
@@ -607,8 +630,62 @@ const CHORD_TYPES = {
     sus4: { semitones: [0, 5, 7],     label: "1 - 4 - 5" },
     dim:  { semitones: [0, 3, 6],     label: "1 - b3 - b5" },
     aug:  { semitones: [0, 4, 8],     label: "1 - 3 - #5" },
-    add9: { semitones: [0, 4, 7, 14], label: "1 - 3 - 5 - 9" }
+    add9: { semitones: [0, 4, 7, 14], label: "1 - 3 - 5 - 9" },
+    "6": { semitones: [0, 4, 7, 9], label: "1 - 3 - 5 - 6" },
+    "m6": { semitones: [0, 3, 7, 9], label: "1 - b3 - 5 - 6" },
+    "mMaj7": { semitones: [0, 3, 7, 11], label: "1 - b3 - 5 - 7" },
+    "m7b5": { semitones: [0, 3, 6, 10], label: "1 - b3 - b5 - b7" },
+    "9": { semitones: [0, 4, 7, 10, 14], label: "1 - 3 - 5 - b7 - 9" },
+    "Maj9": { semitones: [0, 4, 7, 11, 14], label: "1 - 3 - 5 - 7 - 9" },
+    "m9": { semitones: [0, 3, 7, 10, 14], label: "1 - b3 - 5 - b7 - 9" },
+    "11": { semitones: [0, 4, 7, 10, 14, 17], label: "1 - 3 - 5 - b7 - 9 - 11" },
+    "13": { semitones: [0, 4, 7, 10, 14, 21], label: "1 - 3 - 5 - b7 - 9 - 13" },
+    "dim7": { semitones: [0, 3, 6, 9], label: "1 - b3 - b5 - bb7" },
+    "sus2": { semitones: [0, 2, 7], label: "1 - 2 - 5" },
+    "7sus4": { semitones: [0, 5, 7, 10], label: "1 - 4 - 5 - b7" },
+    "7b5": { semitones: [0, 4, 6, 10], label: "1 - 3 - b5 - b7" },
+    "7#5": { semitones: [0, 4, 8, 10], label: "1 - 3 - #5 - b7" },
+    "7b9": { semitones: [0, 4, 7, 10, 13], label: "1 - 3 - 5 - b7 - b9" },
+    "7#9": { semitones: [0, 4, 7, 10, 15], label: "1 - 3 - 5 - b7 - #9" },
+    "Maj7#11": { semitones: [0, 4, 7, 11, 18], label: "1 - 3 - 5 - 7 - #11" }
 };
+
+// SLASH BASS MODEL BEGIN: harmonic bass is independent of quality and chord tones.
+function normalizeHarmonyBass(bass) {
+    if (bass === undefined || bass === null || bass === "") return null;
+    if (typeof bass === "number") {
+        if (!Number.isInteger(bass) || bass < 0 || bass > 11) throw new RangeError("Invalid bass pitch class");
+        return NOTE_NAMES[bass];
+    }
+    if (typeof bass !== "string" || noteIndex(bass) < 0) throw new RangeError("Invalid bass note");
+    return normalizeNote(bass);
+}
+
+function withHarmonyBass(harmony, bass) {
+    const result = { ...harmony };
+    delete result.bass;
+    const note = normalizeHarmonyBass(bass);
+    if (note !== null) result.bass = note;
+    return result;
+}
+
+function resolvePresetChordHarmony(chord, key) {
+    if (noteIndex(key) < 0 || !Number.isInteger(chord.rootOffset) || chord.rootOffset < 0 || chord.rootOffset > 11)
+        throw new RangeError("Invalid preset root/key");
+    if (chord.bass !== undefined) throw new RangeError("Preset bass must use bassOffset, not a fixed note");
+    if (chord.bassOffset !== undefined && (!Number.isInteger(chord.bassOffset) || chord.bassOffset < 0 || chord.bassOffset > 11))
+        throw new RangeError("Invalid preset bassOffset");
+    const root = NOTE_NAMES[(noteIndex(key) + chord.rootOffset) % 12];
+    return withHarmonyBass({ ...chord, root }, chord.bassOffset === undefined ? null
+        : NOTE_NAMES[(noteIndex(key) + chord.bassOffset) % 12]);
+}
+
+function formatHarmonySymbol(harmony) {
+    const suffix = { Maj: "", Maj7: "maj7", Maj9: "maj9" }[harmony.quality] ?? harmony.quality;
+    const root = normalizeNote(harmony.root), bass = normalizeHarmonyBass(harmony.bass);
+    return root + suffix + (bass !== null && noteIndex(bass) !== noteIndex(root) ? "/" + bass : "");
+}
+// SLASH BASS MODEL END
 
 const SCALES = {
     MAJOR:           { name: "Major", intervals: [0, 2, 4, 5, 7, 9, 11] },
@@ -636,7 +713,24 @@ const CHORD_ROLES = Object.freeze({
     "7": Object.freeze(["R", "3", "5", "b7"]), Maj7: Object.freeze(["R", "3", "5", "7"]),
     m7: Object.freeze(["R", "b3", "5", "b7"]), sus4: Object.freeze(["R", "4", "5"]),
     dim: Object.freeze(["R", "b3", "b5"]), aug: Object.freeze(["R", "3", "#5"]),
-    add9: Object.freeze(["R", "3", "5", "9"])
+    add9: Object.freeze(["R", "3", "5", "9"]),
+    "6": Object.freeze(["R", "3", "5", "6"]),
+    "m6": Object.freeze(["R", "b3", "5", "6"]),
+    "mMaj7": Object.freeze(["R", "b3", "5", "7"]),
+    "m7b5": Object.freeze(["R", "b3", "b5", "b7"]),
+    "9": Object.freeze(["R", "3", "5", "b7", "9"]),
+    "Maj9": Object.freeze(["R", "3", "5", "7", "9"]),
+    "m9": Object.freeze(["R", "b3", "5", "b7", "9"]),
+    "11": Object.freeze(["R", "3", "5", "b7", "9", "11"]),
+    "13": Object.freeze(["R", "3", "5", "b7", "9", "13"]),
+    "dim7": Object.freeze(["R", "b3", "b5", "bb7"]),
+    "sus2": Object.freeze(["R", "2", "5"]),
+    "7sus4": Object.freeze(["R", "4", "5", "b7"]),
+    "7b5": Object.freeze(["R", "3", "b5", "b7"]),
+    "7#5": Object.freeze(["R", "3", "#5", "b7"]),
+    "7b9": Object.freeze(["R", "3", "5", "b7", "b9"]),
+    "7#9": Object.freeze(["R", "3", "5", "b7", "#9"]),
+    "Maj7#11": Object.freeze(["R", "3", "5", "7", "#11"])
 });
 
 function deriveChordMetadata(chord) {
@@ -648,7 +742,7 @@ function deriveChordMetadata(chord) {
     return {
         chordDefinition: copyHarmonyTimelineData(chord),
         root: normalizeNote(chord.root), rootPitchClass,
-        // bass/omit/voicing remain distinct opaque metadata; no reinterpretation here.
+        // bass stays independent of chord roles; omit/voicing remain opaque metadata.
         tones: CHORD_TYPES[chord.quality].semitones.map((semitones, index) => ({
             role: CHORD_ROLES[chord.quality][index], semitones,
             pitchClass: (rootPitchClass + semitones) % 12
@@ -874,451 +968,771 @@ const CHORD_TOY_CATALOG = {
 
 const PRESETS = [
     {
-        id: "basic_cycle",
-        category: "基本",
-        name: "基本：循環",
-        description: "I - vi - IV - V",
-        bpm: 90, meter: "4/4", bars: 4, scale: "MAJOR", rhythm: "SUSTAIN", timing: "JPOP",
+        id: "basic_dominant", category: "Basic Harmony",
+        name: "I → V → I", description: "I - V - I",
+        bpm: 82, meter: "4/4", bars: 4, scale: "MAJOR", rhythm: "SUSTAIN", timing: "JPOP",
         chords: [
-            { degree: 1, rootOffset: 0, quality: "Maj", function: "T",  beats: 4 },
-            { degree: 6, rootOffset: 9, quality: "m",   function: "T",  beats: 4 },
-            { degree: 4, rootOffset: 5, quality: "Maj", function: "SD", beats: 4 },
-            { degree: 5, rootOffset: 7, quality: "Maj", function: "D",  beats: 4 }
+            {degree: 1, rootOffset: 0, quality: "Maj", function: "T", beats: 4},
+            {degree: 5, rootOffset: 7, quality: "Maj", function: "D", beats: 4},
+            {degree: 1, rootOffset: 0, quality: "Maj", function: "T", beats: 8},
         ],
-        tags: [["理論","行き先を感じる","進みたくなる"], ["ジャンル","J-POP","王道J-POP"], ["雰囲気","青春と放課後","自転車で帰る午後"]]
+        tags: [["理論", "行き先を感じる", "終止"], ["雰囲気", "青春と放課後", "自転車で帰る午後"], ["ジャンル", "Folk / Acoustic", "Acoustic Pop"]]
     },
     {
-        id: "basic_cadence",
-        category: "基本",
-        name: "基本：終止",
-        description: "I - IV - V - I",
+        id: "basic_subdominant", category: "Basic Harmony",
+        name: "I → IV → I", description: "I - IV - I",
+        bpm: 82, meter: "4/4", bars: 4, scale: "MAJOR", rhythm: "SUSTAIN", timing: "JPOP",
+        chords: [
+            {degree: 1, rootOffset: 0, quality: "Maj", function: "T", beats: 4},
+            {degree: 4, rootOffset: 5, quality: "Maj", function: "SD", beats: 4},
+            {degree: 1, rootOffset: 0, quality: "Maj", function: "T", beats: 8},
+        ],
+        tags: [["理論", "行き先を感じる", "終止"], ["雰囲気", "青春と放課後", "自転車で帰る午後"], ["ジャンル", "Folk / Acoustic", "Acoustic Pop"]]
+    },
+    {
+        id: "basic_cadence", category: "Basic Harmony",
+        name: "終止", description: "I - IV - V - I",
         bpm: 85, meter: "4/4", bars: 4, scale: "MAJOR", rhythm: "SUSTAIN", timing: "JPOP",
         chords: [
-            { degree: 1, rootOffset: 0, quality: "Maj", function: "T",  beats: 4 },
-            { degree: 4, rootOffset: 5, quality: "Maj", function: "SD", beats: 4 },
-            { degree: 5, rootOffset: 7, quality: "Maj", function: "D",  beats: 4 },
-            { degree: 1, rootOffset: 0, quality: "Maj", function: "T",  beats: 4 }
+            {degree: 1, rootOffset: 0, quality: "Maj", function: "T", beats: 4},
+            {degree: 4, rootOffset: 5, quality: "Maj", function: "SD", beats: 4},
+            {degree: 5, rootOffset: 7, quality: "Maj", function: "D", beats: 4},
+            {degree: 1, rootOffset: 0, quality: "Maj", function: "T", beats: 4},
         ],
-        tags: [["理論","行き先を感じる","終止"], ["ジャンル","Folk / Acoustic","Singer-Songwriter"]]
+        tags: [["理論", "行き先を感じる", "終止"], ["ジャンル", "Folk / Acoustic", "Singer-Songwriter"], ["雰囲気", "青春と放課後", "自転車で帰る午後"]]
     },
     {
-        id: "basic_upward",
-        category: "基本",
-        name: "基本：上行",
-        description: "I - ii - iii - IV",
-        bpm: 95, meter: "4/4", bars: 4, scale: "MAJOR", rhythm: "SUSTAIN", timing: "JPOP",
-        chords: [
-            { degree: 1, rootOffset: 0, quality: "Maj", function: "T",  beats: 4 },
-            { degree: 2, rootOffset: 2, quality: "m",   function: "SD", beats: 4 },
-            { degree: 3, rootOffset: 4, quality: "m",   function: "T",  beats: 4 },
-            { degree: 4, rootOffset: 5, quality: "Maj", function: "SD", beats: 4 }
-        ],
-        tags: [["理論","ルートの動き","上昇"], ["理論","ルートの動き","階段"], ["雰囲気","青春と放課後","誰もいない教室"]]
-    },
-    {
-        id: "basic_downward",
-        category: "基本",
-        name: "基本：下降",
-        description: "I - V/B - vi - IV",
+        id: "basic_cycle", category: "Basic Harmony",
+        name: "循環", description: "I - vi - IV - V",
         bpm: 90, meter: "4/4", bars: 4, scale: "MAJOR", rhythm: "SUSTAIN", timing: "JPOP",
         chords: [
-            { degree: 1, rootOffset: 0, quality: "Maj", function: "T",  beats: 4 },
-            { degree: 5, rootOffset: 7, quality: "Maj", function: "D",  beats: 4, bass: "B" },
-            { degree: 6, rootOffset: 9, quality: "m",   function: "T",  beats: 4 },
-            { degree: 4, rootOffset: 5, quality: "Maj", function: "SD", beats: 4 }
+            {degree: 1, rootOffset: 0, quality: "Maj", function: "T", beats: 4},
+            {degree: 6, rootOffset: 9, quality: "m", function: "T", beats: 4},
+            {degree: 4, rootOffset: 5, quality: "Maj", function: "SD", beats: 4},
+            {degree: 5, rootOffset: 7, quality: "Maj", function: "D", beats: 4},
         ],
-        tags: [["理論","ルートの動き","下降"], ["理論","ベースを動かす","下降"], ["雰囲気","夏と郷愁","夏の冒険と遠い日の郷愁"], ["ジャンル","映画・劇伴","映画バラード"]]
+        tags: [["理論", "行き先を感じる", "進みたくなる"], ["ジャンル", "J-POP", "王道J-POP"], ["雰囲気", "青春と放課後", "自転車で帰る午後"]]
     },
     {
-        id: "classic_cycle",
-        category: "王道",
-        name: "王道進行",
-        description: "IV - V - iii - vi",
-        bpm: 105, meter: "4/4", bars: 4, scale: "MAJOR", rhythm: "POP_8", timing: "JPOP",
-        chords: [
-            { degree: 4, rootOffset: 5, quality: "Maj", function: "SD", beats: 4 },
-            { degree: 5, rootOffset: 7, quality: "Maj", function: "D",  beats: 4 },
-            { degree: 3, rootOffset: 4, quality: "m",   function: "T",  beats: 4 },
-            { degree: 6, rootOffset: 9, quality: "m",   function: "T",  beats: 4 }
-        ],
-        tags: [["雰囲気","王道J-POPの記憶","コギャルとシンセの疾走"], ["ジャンル","J-POP","アニソン系ポップ"], ["雰囲気","青春と放課後","放課後と夕焼け"]]
-    },
-    {
-        id: "canon_prog",
-        category: "王道",
-        name: "カノン進行",
-        description: "I - V - vi - iii - IV - I - IV - V",
-        bpm: 96, meter: "4/4", bars: 4, scale: "MAJOR", rhythm: "POP_8", timing: "POP_HALF_BAR",
-        chords: [
-            { degree: 1, rootOffset: 0, quality: "Maj", function: "T",  beats: 2 },
-            { degree: 5, rootOffset: 7, quality: "Maj", function: "D",  beats: 2 },
-            { degree: 6, rootOffset: 9, quality: "m",   function: "T",  beats: 2 },
-            { degree: 3, rootOffset: 4, quality: "m",   function: "T",  beats: 2 },
-            { degree: 4, rootOffset: 5, quality: "Maj", function: "SD", beats: 2 },
-            { degree: 1, rootOffset: 0, quality: "Maj", function: "T",  beats: 2 },
-            { degree: 4, rootOffset: 5, quality: "Maj", function: "SD", beats: 2 },
-            { degree: 5, rootOffset: 7, quality: "Maj", function: "D",  beats: 2 }
-        ],
-        tags: [["雰囲気","王道J-POPの記憶","恋とシンセの90年代"], ["ジャンル","J-POP","90年代ドラマ主題歌"], ["理論","同じ形をずらす","同じ関係を繰り返す"]]
-    },
-    {
-        id: "komawari",
-        category: "王道",
-        name: "小悪魔進行",
-        description: "IVmaj7 - V7 - iii7 - vi7",
-        bpm: 110, meter: "4/4", bars: 4, scale: "MAJOR", rhythm: "POP_8", timing: "JPOP",
-        chords: [
-            { degree: 4, rootOffset: 5, quality: "Maj7", function: "SD", beats: 4 },
-            { degree: 5, rootOffset: 7, quality: "7",    function: "D",  beats: 4 },
-            { degree: 3, rootOffset: 4, quality: "m7",   function: "T",  beats: 4 },
-            { degree: 6, rootOffset: 9, quality: "m7",   function: "T",  beats: 4 }
-        ],
-        tags: [["雰囲気","王道J-POPの記憶","雨上がりのドラマ主題歌"], ["ジャンル","City Pop","王道City Pop"], ["理論","コードを変化させる","7th"]]
-    },
-    {
-        id: "just_two_of_us", recommendedStyle: "STYLE_RNB",
-        category: "ジャズ/R&B",
-        name: "Just The Two Of Us進行",
-        description: "IVmaj7 - III7 - vi7 - I7",
-        bpm: 92, meter: "4/4", bars: 4, scale: "MAJOR", rhythm: "FUNK_16", timing: "RNB_SYNC",
-        chords: [
-            { degree: 4, rootOffset: 5, quality: "Maj7", function: "SD", beats: 4 },
-            { degree: 3, rootOffset: 4, quality: "7",    function: "D",  beats: 4 },
-            { degree: 6, rootOffset: 9, quality: "m7",   function: "T",  beats: 4 },
-            { degree: 1, rootOffset: 0, quality: "7",    function: "T",  beats: 4 }
-        ],
-        tags: [["雰囲気","都会の夜","煙草とネオンの夜"], ["ジャンル","R&B","ネオソウル"], ["ジャンル","City Pop","夜のCity Pop"]]
-    },
-    {
-        id: "bittersweet",
-        category: "実践",
-        name: "切なめ小悪魔",
-        description: "vi - IV - I - V",
-        bpm: 82, meter: "4/4", bars: 4, scale: "MAJOR", rhythm: "SUSTAIN", timing: "BALLAD",
-        chords: [
-            { degree: 6, rootOffset: 9, quality: "m",   function: "T",  beats: 4 },
-            { degree: 4, rootOffset: 5, quality: "Maj", function: "SD", beats: 4 },
-            { degree: 1, rootOffset: 0, quality: "Maj", function: "T",  beats: 4 },
-            { degree: 5, rootOffset: 7, quality: "Maj", function: "D",  beats: 4 }
-        ],
-        tags: [["雰囲気","王道J-POPの記憶","強がり歌姫の疾走"], ["ジャンル","Rock","メロコア"], ["雰囲気","夜と疾走","夜明けまでの疾走"]]
-    },
-    {
-        id: "bright_pop",
-        category: "実践",
-        name: "爽快ポップ",
-        description: "I - V - IV - V",
-        bpm: 112, meter: "4/4", bars: 4, scale: "MAJOR", rhythm: "PULSE_13", timing: "JPOP",
-        chords: [
-            { degree: 1, rootOffset: 0, quality: "Maj", function: "T",  beats: 4 },
-            { degree: 5, rootOffset: 7, quality: "Maj", function: "D",  beats: 4 },
-            { degree: 4, rootOffset: 5, quality: "Maj", function: "SD", beats: 4 },
-            { degree: 5, rootOffset: 7, quality: "Maj", function: "D",  beats: 4 }
-        ],
-        tags: [["雰囲気","夏と郷愁","青空の下の帰り道"], ["ジャンル","J-POP","青春ポップ"], ["ジャンル","Folk / Acoustic","Acoustic Pop"]]
-    },
-    {
-        id: "floating_chill",
-        category: "実践",
-        name: "浮遊感チル",
-        description: "Imaj7 - iii7 - vi7 - IVmaj7",
-        bpm: 88, meter: "4/4", bars: 4, scale: "MAJOR", rhythm: "SUSTAIN", timing: "BALLAD",
-        chords: [
-            { degree: 1, rootOffset: 0, quality: "Maj7", function: "T",  beats: 4 },
-            { degree: 3, rootOffset: 4, quality: "m7",   function: "T",  beats: 4 },
-            { degree: 6, rootOffset: 9, quality: "m7",   function: "T",  beats: 4 },
-            { degree: 4, rootOffset: 5, quality: "Maj7", function: "SD", beats: 4 }
-        ],
-        tags: [["ジャンル","Lo-fi / Chill","Chillout"], ["雰囲気","不思議な既視感","現実と夢のあいだ"], ["理論","コードを変化させる","テンション"]]
-    },
-    {
-        id: "city_night", recommendedStyle: "STYLE_LOFI",
-        category: "ジャズ/R&B",
-        name: "都会のナイトウォーク",
-        description: "IVmaj7 - III7 - vi7 - I7",
-        bpm: 86, meter: "4/4", bars: 4, scale: "MAJOR", rhythm: "HIPHOP", timing: "HIPHOP",
-        chords: [
-            { degree: 4, rootOffset: 5, quality: "Maj7", function: "SD", beats: 4 },
-            { degree: 3, rootOffset: 4, quality: "7",    function: "D",  beats: 4 },
-            { degree: 6, rootOffset: 9, quality: "m7",   function: "T",  beats: 4 },
-            { degree: 1, rootOffset: 0, quality: "7",    function: "T",  beats: 4 }
-        ],
-        tags: [["雰囲気","都会の夜","終電後の都会"], ["雰囲気","都会の夜","雨とネオンの交差点"], ["ジャンル","City Pop","夜のCity Pop"], ["ジャンル","R&B","ネオソウル"], ["ジャンル","Hip-Hop","Jazz Rap"]]
-    },
-    {
-        id: "bossa_breeze", recommendedStyle: "STYLE_BOSSA",
-        category: "ラテン",
-        name: "ボサノバ Breeze",
-        description: "ii7 - V7 - Imaj7 - VI7",
-        bpm: 120, meter: "4/4", bars: 4, scale: "MAJOR", rhythm: "BOSSA", timing: "BOSSA",
-        chords: [
-            { degree: 2, rootOffset: 2, quality: "m7",   function: "SD", beats: 4 },
-            { degree: 5, rootOffset: 7, quality: "7",    function: "D",  beats: 4 },
-            { degree: 1, rootOffset: 0, quality: "Maj7", function: "T",  beats: 4 },
-            { degree: 6, rootOffset: 9, quality: "7",    function: "T",  beats: 4 }
-        ],
-        tags: [["ジャンル","Bossa Nova","王道Bossa Nova"], ["ジャンル","Jazz","スタンダード・ジャズ"], ["雰囲気","都会の夜","午前二時のバー"]]
-    },
-    {
-        id: "blues_12bar",
-        category: "ルーツ",
-        name: "12小節ブルース",
-        description: "I7 - IV7 - V7 (シャッフル)",
-        bpm: 100, meter: "4/4", bars: 12, scale: "MIXOLYDIAN", rhythm: "BLUES_SHUFFLE", timing: "BLUES",
-        chords: [
-            { degree: 1, rootOffset: 0, quality: "7", function: "T",  beats: 4 },
-            { degree: 1, rootOffset: 0, quality: "7", function: "T",  beats: 4 },
-            { degree: 1, rootOffset: 0, quality: "7", function: "T",  beats: 4 },
-            { degree: 1, rootOffset: 0, quality: "7", function: "T",  beats: 4 },
-            { degree: 4, rootOffset: 5, quality: "7", function: "SD", beats: 4 },
-            { degree: 4, rootOffset: 5, quality: "7", function: "SD", beats: 4 },
-            { degree: 1, rootOffset: 0, quality: "7", function: "T",  beats: 4 },
-            { degree: 1, rootOffset: 0, quality: "7", function: "T",  beats: 4 },
-            { degree: 5, rootOffset: 7, quality: "7", function: "D",  beats: 4 },
-            { degree: 4, rootOffset: 5, quality: "7", function: "SD", beats: 4 },
-            { degree: 1, rootOffset: 0, quality: "7", function: "T",  beats: 4 },
-            { degree: 5, rootOffset: 7, quality: "7", function: "D",  beats: 4 }
-        ],
-        tags: [["ジャンル","Blues","12小節ブルース"], ["ジャンル","Rock","ロックンロール"], ["ジャンル","Blues","Chicago Blues"]]
-    },
-    {
-        id: "funk_groove", recommendedStyle: "STYLE_FUNK",
-        category: "ファンク",
-        name: "Funk Groove",
-        description: "i7 - IV7 - i7 - V7",
-        bpm: 102, meter: "4/4", bars: 4, scale: "MINOR_PENTATONIC", rhythm: "FUNK_16", timing: "FUNK",
-        chords: [
-            { degree: 1, rootOffset: 0, quality: "m7", function: "T",  beats: 4 },
-            { degree: 4, rootOffset: 5, quality: "7",  function: "SD", beats: 4 },
-            { degree: 1, rootOffset: 0, quality: "m7", function: "T",  beats: 4 },
-            { degree: 5, rootOffset: 7, quality: "7",  function: "D",  beats: 4 }
-        ],
-        tags: [["ジャンル","Funk","70年代ファンク"], ["ジャンル","Funk","P-Funk系"], ["ジャンル","Soul","ファンク寄りソウル"]]
-    },
-    {
-        id: "fantasy_hero",
-        category: "劇伴",
-        name: "勇者の旅立ち",
-        description: "i - bVI - bIII - bVII",
-        bpm: 115, meter: "4/4", bars: 4, scale: "MINOR", rhythm: "ROCK_8", timing: "JPOP",
-        chords: [
-            { degree: 1, rootOffset: 0, quality: "m",   function: "T",  beats: 4 },
-            { degree: 6, rootOffset: 8, quality: "Maj", function: "SD", beats: 4 },
-            { degree: 3, rootOffset: 3, quality: "Maj", function: "T",  beats: 4 },
-            { degree: 7, rootOffset: 10, quality: "Maj", function: "D", beats: 4 }
-        ],
-        tags: [["雰囲気","ファンタジー世界","古城と勇者のファンタジー"], ["雰囲気","ファンタジー世界","旅立ちの朝"], ["ジャンル","映画・劇伴","ファンタジー"]]
-    },
-    {
-        id: "lofi_dream", recommendedStyle: "STYLE_LOFI",
-        category: "Chill",
-        name: "Lo-Fi Dream",
-        description: "IVmaj7 - iii7 - ii7 - Imaj7",
-        bpm: 78, meter: "4/4", bars: 4, scale: "MAJOR", rhythm: "HIPHOP", timing: "HIPHOP",
-        chords: [
-            { degree: 4, rootOffset: 5, quality: "Maj7", function: "SD", beats: 4 },
-            { degree: 3, rootOffset: 4, quality: "m7",   function: "T",  beats: 4 },
-            { degree: 2, rootOffset: 2, quality: "m7",   function: "SD", beats: 4 },
-            { degree: 1, rootOffset: 0, quality: "Maj7", function: "T",  beats: 4 }
-        ],
-        tags: [["ジャンル","Lo-fi / Chill","Lo-fi Hip-Hop"], ["ジャンル","Lo-fi / Chill","Chillhop"], ["雰囲気","不思議な既視感","夢の中の帰り道"]]
-    },
-    {
-        id: "subdominant_minor",
-        category: "理論",
-        name: "サブドミナントマイナーの切なさ",
-        description: "I - I7 - IV - iv",
-        bpm: 84, meter: "4/4", bars: 4, scale: "MAJOR", rhythm: "SUSTAIN", timing: "BALLAD",
-        chords: [
-            { degree: 1, rootOffset: 0, quality: "Maj", function: "T",  beats: 4 },
-            { degree: 1, rootOffset: 0, quality: "7",   function: "T",  beats: 4 },
-            { degree: 4, rootOffset: 5, quality: "Maj", function: "SD", beats: 4 },
-            { degree: 4, rootOffset: 5, quality: "m",   function: "SD", beats: 4 }
-        ],
-        tags: [["理論","明暗を入れ替える","メジャー→マイナー"], ["理論","明暗を入れ替える","借用"], ["雰囲気","大人の哀愁","古い映画館の帰り道"]]
-    },
-    {
-        id: "deceptive_resolution",
-        category: "理論",
-        name: "偽終止（裏切り）",
-        description: "I - IV - V - vi",
-        bpm: 92, meter: "4/4", bars: 4, scale: "MAJOR", rhythm: "SUSTAIN", timing: "JPOP",
-        chords: [
-            { degree: 1, rootOffset: 0, quality: "Maj", function: "T",  beats: 4 },
-            { degree: 4, rootOffset: 5, quality: "Maj", function: "SD", beats: 4 },
-            { degree: 5, rootOffset: 7, quality: "Maj", function: "D",  beats: 4 },
-            { degree: 6, rootOffset: 9, quality: "m",   function: "T",  beats: 4 }
-        ],
-        tags: [["理論","行き先を感じる","終わりそうで終わらない"], ["理論","意外なコード","代理"]]
-    },
-    {
-        id: "pedal_point",
-        category: "理論",
-        name: "ペダルポイント (Cペダル)",
-        description: "C - F/C - G/C - C",
+        id: "basic_ii_v_i", category: "Basic Harmony",
+        name: "ii - V - I", description: "ii - V - I",
         bpm: 88, meter: "4/4", bars: 4, scale: "MAJOR", rhythm: "SUSTAIN", timing: "JPOP",
         chords: [
-            { degree: 1, rootOffset: 0, quality: "Maj", function: "T",  beats: 4, bass: "C" },
-            { degree: 4, rootOffset: 5, quality: "Maj", function: "SD", beats: 4, bass: "C" },
-            { degree: 5, rootOffset: 7, quality: "Maj", function: "D",  beats: 4, bass: "C" },
-            { degree: 1, rootOffset: 0, quality: "Maj", function: "T",  beats: 4, bass: "C" }
+            {degree: 2, rootOffset: 2, quality: "m", function: "SD", beats: 4},
+            {degree: 5, rootOffset: 7, quality: "Maj", function: "D", beats: 4},
+            {degree: 1, rootOffset: 0, quality: "Maj", function: "T", beats: 8},
         ],
-        tags: [["理論","ベースを動かす","ペダル"], ["理論","音を残して変える","ベースだけ変える"]]
+        tags: [["理論", "行き先を感じる", "終止"], ["雰囲気", "青春と放課後", "自転車で帰る午後"], ["ジャンル", "Folk / Acoustic", "Acoustic Pop"]]
     },
     {
-        id: "ska_bounce", recommendedStyle: "STYLE_REGGAE",
-        category: "ダンス",
-        name: "Ska Pop",
-        description: "I - V - vi - IV",
-        bpm: 135, meter: "4/4", bars: 4, scale: "MAJOR", rhythm: "SKA_OFFBEAT", timing: "JPOP",
+        id: "basic_turnaround", category: "Basic Harmony",
+        name: "I - vi - ii - V", description: "I - vi - ii - V",
+        bpm: 94, meter: "4/4", bars: 4, scale: "MAJOR", rhythm: "PULSE_13", timing: "JPOP",
         chords: [
-            { degree: 1, rootOffset: 0, quality: "Maj", function: "T",  beats: 4 },
-            { degree: 5, rootOffset: 7, quality: "Maj", function: "D",  beats: 4 },
-            { degree: 6, rootOffset: 9, quality: "m",   function: "T",  beats: 4 },
-            { degree: 4, rootOffset: 5, quality: "Maj", function: "SD", beats: 4 }
+            {degree: 1, rootOffset: 0, quality: "Maj", function: "T", beats: 4},
+            {degree: 6, rootOffset: 9, quality: "m", function: "T", beats: 4},
+            {degree: 2, rootOffset: 2, quality: "m", function: "SD", beats: 4},
+            {degree: 5, rootOffset: 7, quality: "Maj", function: "D", beats: 4},
         ],
-        tags: [["ジャンル","Reggae","Ska"], ["雰囲気","青春と放課後","文化祭前夜"]]
+        tags: [["理論", "行き先を感じる", "終止"], ["雰囲気", "青春と放課後", "自転車で帰る午後"], ["ジャンル", "Folk / Acoustic", "Acoustic Pop"]]
     },
     {
-        id: "waltz_gentle",
-        category: "アコースティック",
-        name: "優雅なワルツ",
-        description: "I - vi - ii - V (3/4拍子)",
-        bpm: 90, meter: "3/4", bars: 4, scale: "MAJOR", rhythm: "WALTZ", timing: "WALTZ",
+        id: "basic_ii_v_i_vi", category: "Basic Harmony",
+        name: "ii - V - I - vi", description: "ii - V - I - vi",
+        bpm: 92, meter: "4/4", bars: 4, scale: "MAJOR", rhythm: "PULSE_13", timing: "JPOP",
         chords: [
-            { degree: 1, rootOffset: 0, quality: "Maj", function: "T",  beats: 3 },
-            { degree: 6, rootOffset: 9, quality: "m",   function: "T",  beats: 3 },
-            { degree: 2, rootOffset: 2, quality: "m",   function: "SD", beats: 3 },
-            { degree: 5, rootOffset: 7, quality: "Maj", function: "D",  beats: 3 }
+            {degree: 2, rootOffset: 2, quality: "m", function: "SD", beats: 4},
+            {degree: 5, rootOffset: 7, quality: "Maj", function: "D", beats: 4},
+            {degree: 1, rootOffset: 0, quality: "Maj", function: "T", beats: 4},
+            {degree: 6, rootOffset: 9, quality: "m", function: "T", beats: 4},
         ],
-        tags: [["雰囲気","映画のような世界","夜明け前のピアノ"], ["ジャンル","映画・劇伴","オーケストラ劇伴"]]
+        tags: [["理論", "行き先を感じる", "終止"], ["雰囲気", "青春と放課後", "自転車で帰る午後"], ["ジャンル", "Folk / Acoustic", "Acoustic Pop"]]
     },
     {
-        id: "line_cliche_desc",
-        category: "理論",
-        name: "クリシェ下降 (ラインクリシェ)",
-        description: "Im - Im(maj7) - Im7 - Im6",
-        bpm: 85, meter: "4/4", bars: 4, scale: "MINOR", rhythm: "SUSTAIN", timing: "BALLAD",
-        chords: [
-            { degree: 1, rootOffset: 0, quality: "m",    function: "T", beats: 4 },
-            { degree: 1, rootOffset: 0, quality: "Maj7", function: "T", beats: 4 },
-            { degree: 1, rootOffset: 0, quality: "m7",   function: "T", beats: 4 },
-            { degree: 1, rootOffset: 0, quality: "7",    function: "T", beats: 4 }
-        ],
-        tags: [["理論","音を残して変える","一つの音だけ変える"], ["雰囲気","大人の哀愁","グラスの氷が溶ける頃"], ["ジャンル","Jazz","ジャズバラード"]]
-    },
-    {
-        id: "secondary_dominant",
-        category: "理論",
-        name: "セカンダリードミナント展開",
-        description: "I - VI7 - ii7 - V7",
-        bpm: 98, meter: "4/4", bars: 4, scale: "MAJOR", rhythm: "POP_8", timing: "JPOP",
-        chords: [
-            { degree: 1, rootOffset: 0, quality: "Maj", function: "T",  beats: 4 },
-            { degree: 6, rootOffset: 9, quality: "7",   function: "D",  beats: 4 },
-            { degree: 2, rootOffset: 2, quality: "m7",  function: "SD", beats: 4 },
-            { degree: 5, rootOffset: 7, quality: "7",   function: "D",  beats: 4 }
-        ],
-        tags: [["理論","意外なコード","クロマチック"], ["理論","コードを変化させる","7th"], ["ジャンル","Soul","モータウン系"]]
-    },
-    {
-        id: "andalusian",
-        category: "ワールド/劇伴",
-        name: "アンダルシア進行 (フラメンコ)",
-        description: "i - bVII - bVI - V7",
-        bpm: 110, meter: "4/4", bars: 4, scale: "MINOR", rhythm: "ROCK_8", timing: "JPOP",
-        chords: [
-            { degree: 1, rootOffset: 0,  quality: "m",   function: "T",  beats: 4 },
-            { degree: 7, rootOffset: 10, quality: "Maj", function: "SD", beats: 4 },
-            { degree: 6, rootOffset: 8,  quality: "Maj", function: "SD", beats: 4 },
-            { degree: 5, rootOffset: 7,  quality: "7",   function: "D",  beats: 4 }
-        ],
-        tags: [["理論","ルートの動き","下降"], ["雰囲気","ファンタジー世界","月明かりの古城"], ["ジャンル","映画・劇伴","サスペンス"]]
-    },
-    {
-        id: "modal_dorian", recommendedStyle: "STYLE_SWING",
-        category: "ジャズ/モーダル",
-        name: "ドリアン・モーダルジャム",
-        description: "i7 - IV7 - i7 - IV7",
-        bpm: 108, meter: "4/4", bars: 4, scale: "DORIAN", rhythm: "SWING", timing: "RNB_SYNC",
-        chords: [
-            { degree: 1, rootOffset: 0, quality: "m7", function: "T",  beats: 4 },
-            { degree: 4, rootOffset: 5, quality: "7",  function: "SD", beats: 4 },
-            { degree: 1, rootOffset: 0, quality: "m7", function: "T",  beats: 4 },
-            { degree: 4, rootOffset: 5, quality: "7",  function: "SD", beats: 4 }
-        ],
-        tags: [["ジャンル","Jazz","モーダル・ジャズ"], ["雰囲気","都会の夜","深夜のラジオ"], ["理論","同じ形をずらす","同じ関係を繰り返す"]]
-    },
-    {
-        id: "anime_heroic",
-        category: "アニソン",
-        name: "属性解放アニメOP風",
-        description: "bVI - bVII - Im - Im",
-        bpm: 142, meter: "4/4", bars: 4, scale: "MINOR", rhythm: "PUNK_8", timing: "JPOP",
-        chords: [
-            { degree: 6, rootOffset: 8,  quality: "Maj", function: "SD", beats: 4 },
-            { degree: 7, rootOffset: 10, quality: "Maj", function: "D",  beats: 4 },
-            { degree: 1, rootOffset: 0,  quality: "m",   function: "T",  beats: 4 },
-            { degree: 1, rootOffset: 0,  quality: "m",   function: "T",  beats: 4 }
-        ],
-        tags: [["雰囲気","夜と疾走","ネオンの中を走る"], ["ジャンル","J-POP","アニソン系ポップ"], ["雰囲気","ファンタジー世界","忘れられた王国"]]
-    },
-    {
-        id: "neo_soul_breeze",
-        category: "R&B/Soul",
-        name: "ネオソウル・メロウ",
-        description: "ii9 - V13 - Imaj9 - VI7",
-        bpm: 80, meter: "4/4", bars: 4, scale: "MAJOR", rhythm: "HIPHOP", timing: "RNB_SYNC",
-        chords: [
-            { degree: 2, rootOffset: 2, quality: "add9", function: "SD", beats: 4 },
-            { degree: 5, rootOffset: 7, quality: "7",    function: "D",  beats: 4 },
-            { degree: 1, rootOffset: 0, quality: "Maj7", function: "T",  beats: 4 },
-            { degree: 6, rootOffset: 9, quality: "7",    function: "T",  beats: 4 }
-        ],
-        tags: [["ジャンル","R&B","メロウR&B"], ["雰囲気","都会の夜","知らない街のホテル"], ["理論","コードを変化させる","テンション"]]
-    },
-    {
-        id: "summer_nostalgia",
-        category: "ポップ",
-        name: "青空と夏休み",
-        description: "I - iii - IV - V",
+        id: "summer_nostalgia", category: "Basic Harmony",
+        name: "青空と夏休み", description: "I - iii - IV - V",
         bpm: 104, meter: "4/4", bars: 4, scale: "MAJOR", rhythm: "POP_8", timing: "JPOP",
         chords: [
-            { degree: 1, rootOffset: 0, quality: "Maj", function: "T",  beats: 4 },
-            { degree: 3, rootOffset: 4, quality: "m",   function: "T",  beats: 4 },
-            { degree: 4, rootOffset: 5, quality: "Maj", function: "SD", beats: 4 },
-            { degree: 5, rootOffset: 7, quality: "Maj", function: "D",  beats: 4 }
+            {degree: 1, rootOffset: 0, quality: "Maj", function: "T", beats: 4},
+            {degree: 3, rootOffset: 4, quality: "m", function: "T", beats: 4},
+            {degree: 4, rootOffset: 5, quality: "Maj", function: "SD", beats: 4},
+            {degree: 5, rootOffset: 7, quality: "Maj", function: "D", beats: 4},
         ],
-        tags: [["雰囲気","夏と郷愁","大人になった夏休み"], ["雰囲気","夏と郷愁","夕暮れの海辺"], ["ジャンル","Folk / Acoustic","Campfire Song"]]
+        tags: [["雰囲気", "夏と郷愁", "大人になった夏休み"], ["雰囲気", "夏と郷愁", "夕暮れの海辺"], ["ジャンル", "Folk / Acoustic", "Campfire Song"], ["理論", "行き先を感じる", "終止"]]
     },
     {
-        id: "pass_through_dim",
-        category: "理論",
-        name: "パススルーdim進行",
-        description: "I - C#dim - dm7 - G7",
-        bpm: 95, meter: "4/4", bars: 4, scale: "MAJOR", rhythm: "SWING", timing: "JPOP",
+        id: "basic_upward", category: "Basic Harmony",
+        name: "上行", description: "I - ii - iii - IV",
+        bpm: 95, meter: "4/4", bars: 4, scale: "MAJOR", rhythm: "SUSTAIN", timing: "JPOP",
         chords: [
-            { degree: 1, rootOffset: 0, quality: "Maj", function: "T",  beats: 4 },
-            { degree: 1, rootOffset: 1, quality: "dim", function: "D",  beats: 4 },
-            { degree: 2, rootOffset: 2, quality: "m7",  function: "SD", beats: 4 },
-            { degree: 5, rootOffset: 7, quality: "7",   function: "D",  beats: 4 }
+            {degree: 1, rootOffset: 0, quality: "Maj", function: "T", beats: 4},
+            {degree: 2, rootOffset: 2, quality: "m", function: "SD", beats: 4},
+            {degree: 3, rootOffset: 4, quality: "m", function: "T", beats: 4},
+            {degree: 4, rootOffset: 5, quality: "Maj", function: "SD", beats: 4},
         ],
-        tags: [["理論","意外なコード","クロマチック"], ["理論","ルートの動き","階段"], ["ジャンル","Jazz","スウィング"]]
+        tags: [["理論", "ルートの動き", "上昇"], ["理論", "ルートの動き", "階段"], ["雰囲気", "青春と放課後", "誰もいない教室"], ["ジャンル", "Folk / Acoustic", "Acoustic Pop"]]
     },
     {
-        id: "dark_synthwave",
-        category: "エレクトロ",
-        name: "ミッドナイト・シンセウェーブ",
-        description: "i - bVI - bVII - i",
+        id: "basic_downward", category: "Basic Harmony",
+        name: "下降", description: "I - V/7 - vi - IV",
+        bpm: 90, meter: "4/4", bars: 4, scale: "MAJOR", rhythm: "SUSTAIN", timing: "JPOP",
+        chords: [
+            {degree: 1, rootOffset: 0, quality: "Maj", function: "T", beats: 4},
+            {degree: 5, rootOffset: 7, quality: "Maj", function: "D", beats: 4, bassOffset: 11},
+            {degree: 6, rootOffset: 9, quality: "m", function: "T", beats: 4},
+            {degree: 4, rootOffset: 5, quality: "Maj", function: "SD", beats: 4},
+        ],
+        tags: [["理論", "ルートの動き", "下降"], ["理論", "ベースを動かす", "下降"], ["雰囲気", "夏と郷愁", "夏の冒険と遠い日の郷愁"], ["ジャンル", "映画・劇伴", "映画バラード"]]
+    },
+    {
+        id: "classic_cycle", category: "Pop Cycles",
+        name: "王道進行", description: "IV - V - iii - vi",
+        bpm: 105, meter: "4/4", bars: 4, scale: "MAJOR", rhythm: "POP_8", timing: "JPOP",
+        chords: [
+            {degree: 4, rootOffset: 5, quality: "Maj", function: "SD", beats: 4},
+            {degree: 5, rootOffset: 7, quality: "Maj", function: "D", beats: 4},
+            {degree: 3, rootOffset: 4, quality: "m", function: "T", beats: 4},
+            {degree: 6, rootOffset: 9, quality: "m", function: "T", beats: 4},
+        ],
+        tags: [["雰囲気", "王道J-POPの記憶", "コギャルとシンセの疾走"], ["ジャンル", "J-POP", "アニソン系ポップ"], ["雰囲気", "青春と放課後", "放課後と夕焼け"], ["理論", "同じ形をずらす", "同じ関係を繰り返す"]]
+    },
+    {
+        id: "canon_prog", category: "Pop Cycles",
+        name: "カノン進行", description: "I - V - vi - iii - IV - I - IV - V",
+        bpm: 96, meter: "4/4", bars: 4, scale: "MAJOR", rhythm: "POP_8", timing: "POP_HALF_BAR",
+        chords: [
+            {degree: 1, rootOffset: 0, quality: "Maj", function: "T", beats: 2},
+            {degree: 5, rootOffset: 7, quality: "Maj", function: "D", beats: 2},
+            {degree: 6, rootOffset: 9, quality: "m", function: "T", beats: 2},
+            {degree: 3, rootOffset: 4, quality: "m", function: "T", beats: 2},
+            {degree: 4, rootOffset: 5, quality: "Maj", function: "SD", beats: 2},
+            {degree: 1, rootOffset: 0, quality: "Maj", function: "T", beats: 2},
+            {degree: 4, rootOffset: 5, quality: "Maj", function: "SD", beats: 2},
+            {degree: 5, rootOffset: 7, quality: "Maj", function: "D", beats: 2},
+        ],
+        tags: [["雰囲気", "王道J-POPの記憶", "恋とシンセの90年代"], ["ジャンル", "J-POP", "90年代ドラマ主題歌"], ["理論", "同じ形をずらす", "同じ関係を繰り返す"]]
+    },
+    {
+        id: "pop_1564", category: "Pop Cycles",
+        name: "I - V - vi - IV", description: "I - V - vi - IV",
+        bpm: 100, meter: "4/4", bars: 4, scale: "MAJOR", rhythm: "POP_8", timing: "JPOP",
+        chords: [
+            {degree: 1, rootOffset: 0, quality: "Maj", function: "T", beats: 4},
+            {degree: 5, rootOffset: 7, quality: "Maj", function: "D", beats: 4},
+            {degree: 6, rootOffset: 9, quality: "m", function: "T", beats: 4},
+            {degree: 4, rootOffset: 5, quality: "Maj", function: "SD", beats: 4},
+        ],
+        tags: [["ジャンル", "Reggae", "Ska"], ["雰囲気", "青春と放課後", "文化祭前夜"], ["理論", "同じ形をずらす", "同じ関係を繰り返す"]]
+    },
+    {
+        id: "bittersweet", category: "Pop Cycles",
+        name: "切なめ小悪魔", description: "vi - IV - I - V",
+        bpm: 82, meter: "4/4", bars: 4, scale: "MAJOR", rhythm: "SUSTAIN", timing: "BALLAD",
+        chords: [
+            {degree: 6, rootOffset: 9, quality: "m", function: "T", beats: 4},
+            {degree: 4, rootOffset: 5, quality: "Maj", function: "SD", beats: 4},
+            {degree: 1, rootOffset: 0, quality: "Maj", function: "T", beats: 4},
+            {degree: 5, rootOffset: 7, quality: "Maj", function: "D", beats: 4},
+        ],
+        tags: [["雰囲気", "王道J-POPの記憶", "強がり歌姫の疾走"], ["ジャンル", "Rock", "メロコア"], ["雰囲気", "夜と疾走", "夜明けまでの疾走"], ["理論", "同じ形をずらす", "同じ関係を繰り返す"]]
+    },
+    {
+        id: "bright_pop", category: "Pop Cycles",
+        name: "爽快ポップ", description: "I - V - IV - V",
+        bpm: 112, meter: "4/4", bars: 4, scale: "MAJOR", rhythm: "PULSE_13", timing: "JPOP",
+        chords: [
+            {degree: 1, rootOffset: 0, quality: "Maj", function: "T", beats: 4},
+            {degree: 5, rootOffset: 7, quality: "Maj", function: "D", beats: 4},
+            {degree: 4, rootOffset: 5, quality: "Maj", function: "SD", beats: 4},
+            {degree: 5, rootOffset: 7, quality: "Maj", function: "D", beats: 4},
+        ],
+        tags: [["雰囲気", "夏と郷愁", "青空の下の帰り道"], ["ジャンル", "J-POP", "青春ポップ"], ["ジャンル", "Folk / Acoustic", "Acoustic Pop"], ["理論", "同じ形をずらす", "同じ関係を繰り返す"]]
+    },
+    {
+        id: "pop_4156", category: "Pop Cycles",
+        name: "IV - I - V - vi", description: "IV - I - V - vi",
+        bpm: 102, meter: "4/4", bars: 4, scale: "MAJOR", rhythm: "POP_8", timing: "JPOP",
+        chords: [
+            {degree: 4, rootOffset: 5, quality: "Maj", function: "SD", beats: 4},
+            {degree: 1, rootOffset: 0, quality: "Maj", function: "T", beats: 4},
+            {degree: 5, rootOffset: 7, quality: "Maj", function: "D", beats: 4},
+            {degree: 6, rootOffset: 9, quality: "m", function: "T", beats: 4},
+        ],
+        tags: [["理論", "同じ形をずらす", "同じ関係を繰り返す"], ["雰囲気", "王道J-POPの記憶", "カラオケで歌いたい青春"], ["ジャンル", "J-POP", "王道J-POP"]]
+    },
+    {
+        id: "pop_1465", category: "Pop Cycles",
+        name: "I - IV - vi - V", description: "I - IV - vi - V",
+        bpm: 100, meter: "4/4", bars: 4, scale: "MAJOR", rhythm: "POP_8", timing: "JPOP",
+        chords: [
+            {degree: 1, rootOffset: 0, quality: "Maj", function: "T", beats: 4},
+            {degree: 4, rootOffset: 5, quality: "Maj", function: "SD", beats: 4},
+            {degree: 6, rootOffset: 9, quality: "m", function: "T", beats: 4},
+            {degree: 5, rootOffset: 7, quality: "Maj", function: "D", beats: 4},
+        ],
+        tags: [["理論", "同じ形をずらす", "同じ関係を繰り返す"], ["雰囲気", "王道J-POPの記憶", "カラオケで歌いたい青春"], ["ジャンル", "J-POP", "王道J-POP"]]
+    },
+    {
+        id: "pop_6545", category: "Pop Cycles",
+        name: "vi - V - IV - V", description: "vi - V - IV - V",
+        bpm: 96, meter: "4/4", bars: 4, scale: "MAJOR", rhythm: "POP_8", timing: "JPOP",
+        chords: [
+            {degree: 6, rootOffset: 9, quality: "m", function: "T", beats: 4},
+            {degree: 5, rootOffset: 7, quality: "Maj", function: "D", beats: 4},
+            {degree: 4, rootOffset: 5, quality: "Maj", function: "SD", beats: 4},
+            {degree: 5, rootOffset: 7, quality: "Maj", function: "D", beats: 4},
+        ],
+        tags: [["理論", "同じ形をずらす", "同じ関係を繰り返す"], ["雰囲気", "王道J-POPの記憶", "カラオケで歌いたい青春"], ["ジャンル", "J-POP", "王道J-POP"]]
+    },
+    {
+        id: "pop_1364", category: "Pop Cycles",
+        name: "I - iii - vi - IV", description: "I - iii - vi - IV",
+        bpm: 94, meter: "4/4", bars: 4, scale: "MAJOR", rhythm: "POP_8", timing: "JPOP",
+        chords: [
+            {degree: 1, rootOffset: 0, quality: "Maj", function: "T", beats: 4},
+            {degree: 3, rootOffset: 4, quality: "m", function: "T", beats: 4},
+            {degree: 6, rootOffset: 9, quality: "m", function: "T", beats: 4},
+            {degree: 4, rootOffset: 5, quality: "Maj", function: "SD", beats: 4},
+        ],
+        tags: [["理論", "同じ形をずらす", "同じ関係を繰り返す"], ["雰囲気", "王道J-POPの記憶", "カラオケで歌いたい青春"], ["ジャンル", "J-POP", "王道J-POP"]]
+    },
+    {
+        id: "pop_4561", category: "Pop Cycles",
+        name: "IV - V - vi - I", description: "IV - V - vi - I",
+        bpm: 106, meter: "4/4", bars: 4, scale: "MAJOR", rhythm: "POP_8", timing: "JPOP",
+        chords: [
+            {degree: 4, rootOffset: 5, quality: "Maj", function: "SD", beats: 4},
+            {degree: 5, rootOffset: 7, quality: "Maj", function: "D", beats: 4},
+            {degree: 6, rootOffset: 9, quality: "m", function: "T", beats: 4},
+            {degree: 1, rootOffset: 0, quality: "Maj", function: "T", beats: 4},
+        ],
+        tags: [["理論", "同じ形をずらす", "同じ関係を繰り返す"], ["雰囲気", "王道J-POPの記憶", "カラオケで歌いたい青春"], ["ジャンル", "J-POP", "王道J-POP"]]
+    },
+    {
+        id: "minor_cadence", category: "Minor / Modal",
+        name: "i - iv - V7 - i", description: "i - iv - V7 - i",
+        bpm: 84, meter: "4/4", bars: 4, scale: "MINOR", rhythm: "SUSTAIN", timing: "JPOP",
+        chords: [
+            {degree: 1, rootOffset: 0, quality: "m", function: "T", beats: 4},
+            {degree: 4, rootOffset: 5, quality: "m", function: "SD", beats: 4},
+            {degree: 5, rootOffset: 7, quality: "7", function: "D", beats: 4},
+            {degree: 1, rootOffset: 0, quality: "m", function: "T", beats: 4},
+        ],
+        tags: [["理論", "ルートの動き", "跳躍"], ["雰囲気", "ファンタジー世界", "月明かりの古城"], ["ジャンル", "映画・劇伴", "ドラマチック"]]
+    },
+    {
+        id: "dark_synthwave", category: "Minor / Modal",
+        name: "ミッドナイト・シンセウェーブ", description: "i - bVI - bVII - i",
         bpm: 118, meter: "4/4", bars: 4, scale: "MINOR", rhythm: "POP_8", timing: "JPOP",
         chords: [
-            { degree: 1, rootOffset: 0,  quality: "m",   function: "T",  beats: 4 },
-            { degree: 6, rootOffset: 8,  quality: "Maj", function: "SD", beats: 4 },
-            { degree: 7, rootOffset: 10, quality: "Maj", function: "D",  beats: 4 },
-            { degree: 1, rootOffset: 0,  quality: "m",   function: "T",  beats: 4 }
+            {degree: 1, rootOffset: 0, quality: "m", function: "T", beats: 4},
+            {degree: 6, rootOffset: 8, quality: "Maj", function: "SD", beats: 4},
+            {degree: 7, rootOffset: 10, quality: "Maj", function: "D", beats: 4},
+            {degree: 1, rootOffset: 0, quality: "m", function: "T", beats: 4},
         ],
-        tags: [["雰囲気","夜と疾走","午前零時のダンスフロア"], ["ジャンル","Electronic / Dance","Synth Pop"], ["雰囲気","都会の夜","雨とネオンの交差点"]]
-    }
+        tags: [["雰囲気", "夜と疾走", "午前零時のダンスフロア"], ["ジャンル", "Electronic / Dance", "Synth Pop"], ["雰囲気", "都会の夜", "雨とネオンの交差点"], ["理論", "ルートの動き", "跳躍"]]
+    },
+    {
+        id: "andalusian", category: "Minor / Modal",
+        name: "アンダルシア進行 (フラメンコ)", description: "i - bVII - bVI - V7",
+        bpm: 110, meter: "4/4", bars: 4, scale: "MINOR", rhythm: "ROCK_8", timing: "JPOP",
+        chords: [
+            {degree: 1, rootOffset: 0, quality: "m", function: "T", beats: 4},
+            {degree: 7, rootOffset: 10, quality: "Maj", function: "SD", beats: 4},
+            {degree: 6, rootOffset: 8, quality: "Maj", function: "SD", beats: 4},
+            {degree: 5, rootOffset: 7, quality: "7", function: "D", beats: 4},
+        ],
+        tags: [["理論", "ルートの動き", "下降"], ["雰囲気", "ファンタジー世界", "月明かりの古城"], ["ジャンル", "映画・劇伴", "サスペンス"]]
+    },
+    {
+        id: "fantasy_hero", category: "Minor / Modal",
+        name: "勇者の旅立ち", description: "i - bVI - bIII - bVII",
+        bpm: 115, meter: "4/4", bars: 4, scale: "MINOR", rhythm: "ROCK_8", timing: "JPOP",
+        chords: [
+            {degree: 1, rootOffset: 0, quality: "m", function: "T", beats: 4},
+            {degree: 6, rootOffset: 8, quality: "Maj", function: "SD", beats: 4},
+            {degree: 3, rootOffset: 3, quality: "Maj", function: "T", beats: 4},
+            {degree: 7, rootOffset: 10, quality: "Maj", function: "D", beats: 4},
+        ],
+        tags: [["雰囲気", "ファンタジー世界", "古城と勇者のファンタジー"], ["雰囲気", "ファンタジー世界", "旅立ちの朝"], ["ジャンル", "映画・劇伴", "ファンタジー"], ["理論", "ルートの動き", "跳躍"]]
+    },
+    {
+        id: "minor_rise", category: "Minor / Modal",
+        name: "マイナーの上昇", description: "bVI - bVII - i - i",
+        bpm: 132, meter: "4/4", bars: 4, scale: "MINOR", rhythm: "ROCK_8", timing: "JPOP",
+        chords: [
+            {degree: 6, rootOffset: 8, quality: "Maj", function: "SD", beats: 4},
+            {degree: 7, rootOffset: 10, quality: "Maj", function: "D", beats: 4},
+            {degree: 1, rootOffset: 0, quality: "m", function: "T", beats: 4},
+            {degree: 1, rootOffset: 0, quality: "m", function: "T", beats: 4},
+        ],
+        tags: [["雰囲気", "夜と疾走", "ネオンの中を走る"], ["ジャンル", "J-POP", "アニソン系ポップ"], ["雰囲気", "ファンタジー世界", "忘れられた王国"], ["理論", "ルートの動き", "跳躍"]]
+    },
+    {
+        id: "minor_1374", category: "Minor / Modal",
+        name: "i - bIII - bVII - iv", description: "i - bIII - bVII - iv",
+        bpm: 92, meter: "4/4", bars: 4, scale: "MINOR", rhythm: "SUSTAIN", timing: "JPOP",
+        chords: [
+            {degree: 1, rootOffset: 0, quality: "m", function: "T", beats: 4},
+            {degree: 3, rootOffset: 3, quality: "Maj", function: "T", beats: 4},
+            {degree: 7, rootOffset: 10, quality: "Maj", function: "D", beats: 4},
+            {degree: 4, rootOffset: 5, quality: "m", function: "SD", beats: 4},
+        ],
+        tags: [["理論", "ルートの動き", "跳躍"], ["雰囲気", "ファンタジー世界", "月明かりの古城"], ["ジャンル", "映画・劇伴", "ドラマチック"]]
+    },
+    {
+        id: "minor_1473", category: "Minor / Modal",
+        name: "i - iv - bVII - bIII", description: "i - iv - bVII - bIII",
+        bpm: 96, meter: "4/4", bars: 4, scale: "MINOR", rhythm: "ROCK_8", timing: "JPOP",
+        chords: [
+            {degree: 1, rootOffset: 0, quality: "m", function: "T", beats: 4},
+            {degree: 4, rootOffset: 5, quality: "m", function: "SD", beats: 4},
+            {degree: 7, rootOffset: 10, quality: "Maj", function: "D", beats: 4},
+            {degree: 3, rootOffset: 3, quality: "Maj", function: "T", beats: 4},
+        ],
+        tags: [["理論", "ルートの動き", "跳躍"], ["雰囲気", "ファンタジー世界", "月明かりの古城"], ["ジャンル", "映画・劇伴", "ドラマチック"]]
+    },
+    {
+        id: "modal_dorian", category: "Minor / Modal",
+        name: "ドリアン・モーダルジャム", description: "i7 - IV7 - i7 - IV7",
+        bpm: 108, meter: "4/4", bars: 4, scale: "DORIAN", rhythm: "SWING", timing: "RNB_SYNC",
+        recommendedStyle: "STYLE_SWING",
+        chords: [
+            {degree: 1, rootOffset: 0, quality: "m7", function: "T", beats: 4},
+            {degree: 4, rootOffset: 5, quality: "7", function: "SD", beats: 4},
+            {degree: 1, rootOffset: 0, quality: "m7", function: "T", beats: 4},
+            {degree: 4, rootOffset: 5, quality: "7", function: "SD", beats: 4},
+        ],
+        tags: [["ジャンル", "Jazz", "モーダル・ジャズ"], ["雰囲気", "大人の哀愁", "深夜のラジオ"], ["理論", "同じ形をずらす", "同じ関係を繰り返す"]]
+    },
+    {
+        id: "minor_flat7_vamp", category: "Minor / Modal",
+        name: "i - bVII - i - bVII", description: "i - bVII - i - bVII",
+        bpm: 96, meter: "4/4", bars: 4, scale: "MINOR", rhythm: "ROCK_8", timing: "JPOP",
+        chords: [
+            {degree: 1, rootOffset: 0, quality: "m", function: "T", beats: 4},
+            {degree: 7, rootOffset: 10, quality: "Maj", function: "D", beats: 4},
+            {degree: 1, rootOffset: 0, quality: "m", function: "T", beats: 4},
+            {degree: 7, rootOffset: 10, quality: "Maj", function: "D", beats: 4},
+        ],
+        tags: [["理論", "同じ形をずらす", "同じ関係を繰り返す"], ["雰囲気", "ファンタジー世界", "月明かりの古城"], ["ジャンル", "映画・劇伴", "ドラマチック"]]
+    },
+    {
+        id: "minor_dramatic", category: "Minor / Modal",
+        name: "i - iv - bVI - V7", description: "i - iv - bVI - V7",
+        bpm: 88, meter: "4/4", bars: 4, scale: "MINOR", rhythm: "SUSTAIN", timing: "JPOP",
+        chords: [
+            {degree: 1, rootOffset: 0, quality: "m", function: "T", beats: 4},
+            {degree: 4, rootOffset: 5, quality: "m", function: "SD", beats: 4},
+            {degree: 6, rootOffset: 8, quality: "Maj", function: "T", beats: 4},
+            {degree: 5, rootOffset: 7, quality: "7", function: "D", beats: 4},
+        ],
+        tags: [["理論", "ルートの動き", "跳躍"], ["雰囲気", "ファンタジー世界", "月明かりの古城"], ["ジャンル", "映画・劇伴", "ドラマチック"]]
+    },
+    {
+        id: "subdominant_minor", category: "Color / Borrowed / Chromatic",
+        name: "サブドミナントマイナーの切なさ", description: "I - I7 - IV - iv",
+        bpm: 84, meter: "4/4", bars: 4, scale: "MAJOR", rhythm: "SUSTAIN", timing: "BALLAD",
+        chords: [
+            {degree: 1, rootOffset: 0, quality: "Maj", function: "T", beats: 4},
+            {degree: 1, rootOffset: 0, quality: "7", function: "T", beats: 4},
+            {degree: 4, rootOffset: 5, quality: "Maj", function: "SD", beats: 4},
+            {degree: 4, rootOffset: 5, quality: "m", function: "SD", beats: 4},
+        ],
+        tags: [["理論", "明暗を入れ替える", "メジャー→マイナー"], ["理論", "明暗を入れ替える", "借用"], ["雰囲気", "大人の哀愁", "古い映画館の帰り道"], ["ジャンル", "J-POP", "バラード"]]
+    },
+    {
+        id: "deceptive_resolution", category: "Color / Borrowed / Chromatic",
+        name: "偽終止（裏切り）", description: "I - IV - V - vi",
+        bpm: 92, meter: "4/4", bars: 4, scale: "MAJOR", rhythm: "SUSTAIN", timing: "JPOP",
+        chords: [
+            {degree: 1, rootOffset: 0, quality: "Maj", function: "T", beats: 4},
+            {degree: 4, rootOffset: 5, quality: "Maj", function: "SD", beats: 4},
+            {degree: 5, rootOffset: 7, quality: "Maj", function: "D", beats: 4},
+            {degree: 6, rootOffset: 9, quality: "m", function: "T", beats: 4},
+        ],
+        tags: [["理論", "行き先を感じる", "終わりそうで終わらない"], ["理論", "意外なコード", "代理"], ["雰囲気", "不思議な既視感", "少しだけ世界がずれる"], ["ジャンル", "J-POP", "バラード"]]
+    },
+    {
+        id: "secondary_dominant", category: "Color / Borrowed / Chromatic",
+        name: "セカンダリードミナント展開", description: "I - VI7 - ii7 - V7",
+        bpm: 98, meter: "4/4", bars: 4, scale: "MAJOR", rhythm: "POP_8", timing: "JPOP",
+        chords: [
+            {degree: 1, rootOffset: 0, quality: "Maj", function: "T", beats: 4},
+            {degree: 6, rootOffset: 9, quality: "7", function: "D", beats: 4},
+            {degree: 2, rootOffset: 2, quality: "m7", function: "SD", beats: 4},
+            {degree: 5, rootOffset: 7, quality: "7", function: "D", beats: 4},
+        ],
+        tags: [["理論", "意外なコード", "クロマチック"], ["理論", "コードを変化させる", "7th"], ["ジャンル", "Soul", "モータウン系"], ["雰囲気", "不思議な既視感", "少しだけ世界がずれる"]]
+    },
+    {
+        id: "secondary_to_v", category: "Color / Borrowed / Chromatic",
+        name: "I - II7 - V7 - I", description: "I - II7 - V7 - I",
+        bpm: 96, meter: "4/4", bars: 4, scale: "MAJOR", rhythm: "PULSE_13", timing: "JPOP",
+        chords: [
+            {degree: 1, rootOffset: 0, quality: "Maj", function: "T", beats: 4},
+            {degree: 2, rootOffset: 2, quality: "7", function: "SD", beats: 4},
+            {degree: 5, rootOffset: 7, quality: "7", function: "D", beats: 4},
+            {degree: 1, rootOffset: 0, quality: "Maj", function: "T", beats: 4},
+        ],
+        tags: [["理論", "意外なコード", "クロマチック"], ["雰囲気", "不思議な既視感", "少しだけ世界がずれる"], ["ジャンル", "J-POP", "バラード"]]
+    },
+    {
+        id: "secondary_to_vi", category: "Color / Borrowed / Chromatic",
+        name: "I - III7 - vi7 - II7", description: "I - III7 - vi7 - II7",
+        bpm: 94, meter: "4/4", bars: 4, scale: "MAJOR", rhythm: "PULSE_13", timing: "JPOP",
+        chords: [
+            {degree: 1, rootOffset: 0, quality: "Maj", function: "T", beats: 4},
+            {degree: 3, rootOffset: 4, quality: "7", function: "T", beats: 4},
+            {degree: 6, rootOffset: 9, quality: "m7", function: "T", beats: 4},
+            {degree: 2, rootOffset: 2, quality: "7", function: "SD", beats: 4},
+        ],
+        tags: [["理論", "意外なコード", "クロマチック"], ["雰囲気", "不思議な既視感", "少しだけ世界がずれる"], ["ジャンル", "J-POP", "バラード"]]
+    },
+    {
+        id: "passing_dim7", category: "Color / Borrowed / Chromatic",
+        name: "Passing diminished 7", description: "I - #I°7 - ii7 - V7",
+        bpm: 95, meter: "4/4", bars: 4, scale: "MAJOR", rhythm: "SWING", timing: "JPOP",
+        chords: [
+            {degree: 1, rootOffset: 0, quality: "Maj", function: "T", beats: 2},
+            {degree: 1, rootOffset: 1, quality: "dim7", function: "D", beats: 2},
+            {degree: 2, rootOffset: 2, quality: "m7", function: "SD", beats: 4},
+            {degree: 5, rootOffset: 7, quality: "7", function: "D", beats: 8},
+        ],
+        tags: [["理論", "意外なコード", "クロマチック"], ["理論", "ルートの動き", "階段"], ["ジャンル", "Jazz", "スウィング"], ["雰囲気", "不思議な既視感", "少しだけ世界がずれる"]]
+    },
+    {
+        id: "borrowed_flat7", category: "Color / Borrowed / Chromatic",
+        name: "I - bVII - IV - I", description: "I - bVII - IV - I",
+        bpm: 102, meter: "4/4", bars: 4, scale: "MAJOR", rhythm: "ROCK_8", timing: "JPOP",
+        chords: [
+            {degree: 1, rootOffset: 0, quality: "Maj", function: "T", beats: 4},
+            {degree: 7, rootOffset: 10, quality: "Maj", function: "D", beats: 4},
+            {degree: 4, rootOffset: 5, quality: "Maj", function: "SD", beats: 4},
+            {degree: 1, rootOffset: 0, quality: "Maj", function: "T", beats: 4},
+        ],
+        tags: [["理論", "明暗を入れ替える", "借用"], ["雰囲気", "不思議な既視感", "少しだけ世界がずれる"], ["ジャンル", "J-POP", "バラード"]]
+    },
+    {
+        id: "borrowed_flat3", category: "Color / Borrowed / Chromatic",
+        name: "I - bIII - IV - I", description: "I - bIII - IV - I",
+        bpm: 96, meter: "4/4", bars: 4, scale: "MAJOR", rhythm: "ROCK_8", timing: "JPOP",
+        chords: [
+            {degree: 1, rootOffset: 0, quality: "Maj", function: "T", beats: 4},
+            {degree: 3, rootOffset: 3, quality: "Maj", function: "T", beats: 4},
+            {degree: 4, rootOffset: 5, quality: "Maj", function: "SD", beats: 4},
+            {degree: 1, rootOffset: 0, quality: "Maj", function: "T", beats: 4},
+        ],
+        tags: [["理論", "明暗を入れ替える", "借用"], ["雰囲気", "不思議な既視感", "少しだけ世界がずれる"], ["ジャンル", "J-POP", "バラード"]]
+    },
+    {
+        id: "augmented_pull", category: "Color / Borrowed / Chromatic",
+        name: "I - Iaug - vi - IV", description: "I - Iaug - vi - IV",
+        bpm: 82, meter: "4/4", bars: 4, scale: "MAJOR", rhythm: "SUSTAIN", timing: "JPOP",
+        chords: [
+            {degree: 1, rootOffset: 0, quality: "Maj", function: "T", beats: 4},
+            {degree: 1, rootOffset: 0, quality: "aug", function: "T", beats: 4},
+            {degree: 6, rootOffset: 9, quality: "m", function: "T", beats: 4},
+            {degree: 4, rootOffset: 5, quality: "Maj", function: "SD", beats: 4},
+        ],
+        tags: [["理論", "意外なコード", "クロマチック"], ["雰囲気", "不思議な既視感", "少しだけ世界がずれる"], ["ジャンル", "J-POP", "バラード"]]
+    },
+    {
+        id: "dominant_sus", category: "Color / Borrowed / Chromatic",
+        name: "I - IV - V7sus4 - V7", description: "I - IV - V7sus4 - V7",
+        bpm: 90, meter: "4/4", bars: 4, scale: "MAJOR", rhythm: "SUSTAIN", timing: "JPOP",
+        chords: [
+            {degree: 1, rootOffset: 0, quality: "Maj", function: "T", beats: 4},
+            {degree: 4, rootOffset: 5, quality: "Maj", function: "SD", beats: 4},
+            {degree: 5, rootOffset: 7, quality: "7sus4", function: "D", beats: 4},
+            {degree: 5, rootOffset: 7, quality: "7", function: "D", beats: 4},
+        ],
+        tags: [["理論", "コードを変化させる", "sus"], ["雰囲気", "不思議な既視感", "少しだけ世界がずれる"], ["ジャンル", "J-POP", "バラード"]]
+    },
+    {
+        id: "jazz_251", category: "Jazz / R&B / Soul",
+        name: "ii7 - V7 - Imaj7", description: "ii7 - V7 - Imaj7",
+        bpm: 100, meter: "4/4", bars: 4, scale: "MAJOR", rhythm: "SWING", timing: "JPOP",
+        recommendedStyle: "STYLE_SWING",
+        chords: [
+            {degree: 2, rootOffset: 2, quality: "m7", function: "SD", beats: 4},
+            {degree: 5, rootOffset: 7, quality: "7", function: "D", beats: 4},
+            {degree: 1, rootOffset: 0, quality: "Maj7", function: "T", beats: 8},
+        ],
+        tags: [["理論", "コードを変化させる", "テンション"], ["雰囲気", "都会の夜", "午前二時のバー"], ["ジャンル", "Jazz", "スタンダード・ジャズ"]]
+    },
+    {
+        id: "bossa_breeze", category: "Jazz / R&B / Soul",
+        name: "ボサノバ Breeze", description: "ii7 - V7 - Imaj7 - VI7",
+        bpm: 120, meter: "4/4", bars: 4, scale: "MAJOR", rhythm: "BOSSA", timing: "BOSSA",
+        recommendedStyle: "STYLE_BOSSA",
+        chords: [
+            {degree: 2, rootOffset: 2, quality: "m7", function: "SD", beats: 4},
+            {degree: 5, rootOffset: 7, quality: "7", function: "D", beats: 4},
+            {degree: 1, rootOffset: 0, quality: "Maj7", function: "T", beats: 4},
+            {degree: 6, rootOffset: 9, quality: "7", function: "T", beats: 4},
+        ],
+        tags: [["ジャンル", "Bossa Nova", "王道Bossa Nova"], ["ジャンル", "Jazz", "スタンダード・ジャズ"], ["雰囲気", "都会の夜", "午前二時のバー"], ["理論", "コードを変化させる", "テンション"]]
+    },
+    {
+        id: "jazz_turnaround", category: "Jazz / R&B / Soul",
+        name: "iii7 - VI7 - ii7 - V7", description: "iii7 - VI7 - ii7 - V7",
+        bpm: 112, meter: "4/4", bars: 4, scale: "MAJOR", rhythm: "SWING", timing: "JPOP",
+        recommendedStyle: "STYLE_SWING",
+        chords: [
+            {degree: 3, rootOffset: 4, quality: "m7", function: "T", beats: 4},
+            {degree: 6, rootOffset: 9, quality: "7", function: "T", beats: 4},
+            {degree: 2, rootOffset: 2, quality: "m7", function: "SD", beats: 4},
+            {degree: 5, rootOffset: 7, quality: "7", function: "D", beats: 4},
+        ],
+        tags: [["理論", "コードを変化させる", "テンション"], ["雰囲気", "都会の夜", "午前二時のバー"], ["ジャンル", "Jazz", "スタンダード・ジャズ"]]
+    },
+    {
+        id: "jazz_1625", category: "Jazz / R&B / Soul",
+        name: "Imaj7 - vi7 - ii7 - V7", description: "Imaj7 - vi7 - ii7 - V7",
+        bpm: 106, meter: "4/4", bars: 4, scale: "MAJOR", rhythm: "SWING", timing: "JPOP",
+        chords: [
+            {degree: 1, rootOffset: 0, quality: "Maj7", function: "T", beats: 4},
+            {degree: 6, rootOffset: 9, quality: "m7", function: "T", beats: 4},
+            {degree: 2, rootOffset: 2, quality: "m7", function: "SD", beats: 4},
+            {degree: 5, rootOffset: 7, quality: "7", function: "D", beats: 4},
+        ],
+        tags: [["理論", "コードを変化させる", "テンション"], ["雰囲気", "都会の夜", "午前二時のバー"], ["ジャンル", "Jazz", "スタンダード・ジャズ"]]
+    },
+    {
+        id: "rnb_4361", category: "Jazz / R&B / Soul",
+        name: "R&Bの循環", description: "IVmaj7 - III7 - vi7 - I7",
+        bpm: 92, meter: "4/4", bars: 4, scale: "MAJOR", rhythm: "FUNK_16", timing: "RNB_SYNC",
+        recommendedStyle: "STYLE_RNB",
+        chords: [
+            {degree: 4, rootOffset: 5, quality: "Maj7", function: "SD", beats: 4},
+            {degree: 3, rootOffset: 4, quality: "7", function: "D", beats: 4},
+            {degree: 6, rootOffset: 9, quality: "m7", function: "T", beats: 4},
+            {degree: 1, rootOffset: 0, quality: "7", function: "T", beats: 4},
+        ],
+        tags: [["雰囲気", "都会の夜", "煙草とネオンの夜"], ["ジャンル", "R&B", "ネオソウル"], ["ジャンル", "City Pop", "夜のCity Pop"], ["雰囲気", "都会の夜", "終電後の都会"], ["雰囲気", "都会の夜", "雨とネオンの交差点"], ["ジャンル", "Hip-Hop", "Jazz Rap"], ["理論", "コードを変化させる", "テンション"]]
+    },
+    {
+        id: "komawari", category: "Jazz / R&B / Soul",
+        name: "小悪魔進行", description: "IVmaj7 - V7 - iii7 - vi7",
+        bpm: 110, meter: "4/4", bars: 4, scale: "MAJOR", rhythm: "POP_8", timing: "JPOP",
+        chords: [
+            {degree: 4, rootOffset: 5, quality: "Maj7", function: "SD", beats: 4},
+            {degree: 5, rootOffset: 7, quality: "7", function: "D", beats: 4},
+            {degree: 3, rootOffset: 4, quality: "m7", function: "T", beats: 4},
+            {degree: 6, rootOffset: 9, quality: "m7", function: "T", beats: 4},
+        ],
+        tags: [["雰囲気", "王道J-POPの記憶", "雨上がりのドラマ主題歌"], ["ジャンル", "City Pop", "王道City Pop"], ["理論", "コードを変化させる", "7th"]]
+    },
+    {
+        id: "jazz_6251", category: "Jazz / R&B / Soul",
+        name: "vi7 - ii7 - V7 - Imaj7", description: "vi7 - ii7 - V7 - Imaj7",
+        bpm: 104, meter: "4/4", bars: 4, scale: "MAJOR", rhythm: "SWING", timing: "JPOP",
+        chords: [
+            {degree: 6, rootOffset: 9, quality: "m7", function: "T", beats: 4},
+            {degree: 2, rootOffset: 2, quality: "m7", function: "SD", beats: 4},
+            {degree: 5, rootOffset: 7, quality: "7", function: "D", beats: 4},
+            {degree: 1, rootOffset: 0, quality: "Maj7", function: "T", beats: 4},
+        ],
+        tags: [["理論", "コードを変化させる", "テンション"], ["雰囲気", "都会の夜", "午前二時のバー"], ["ジャンル", "Jazz", "スタンダード・ジャズ"]]
+    },
+    {
+        id: "neo_soul_breeze", category: "Jazz / R&B / Soul",
+        name: "ネオソウル・メロウ", description: "ii9 - V13 - Imaj9 - VI7",
+        bpm: 80, meter: "4/4", bars: 4, scale: "MAJOR", rhythm: "HIPHOP", timing: "RNB_SYNC",
+        recommendedStyle: "STYLE_RNB",
+        chords: [
+            {degree: 2, rootOffset: 2, quality: "m9", function: "SD", beats: 4},
+            {degree: 5, rootOffset: 7, quality: "13", function: "D", beats: 4},
+            {degree: 1, rootOffset: 0, quality: "Maj9", function: "T", beats: 4},
+            {degree: 6, rootOffset: 9, quality: "7", function: "T", beats: 4},
+        ],
+        tags: [["ジャンル", "R&B", "メロウR&B"], ["雰囲気", "都会の夜", "知らない街のホテル"], ["理論", "コードを変化させる", "テンション"]]
+    },
+    {
+        id: "minor_251", category: "Jazz / R&B / Soul",
+        name: "Minor ii-V-i", description: "iiø7 - V7b9 - iMaj7 - i6",
+        bpm: 76, meter: "4/4", bars: 4, scale: "MINOR", rhythm: "SUSTAIN", timing: "JPOP",
+        chords: [
+            {degree: 2, rootOffset: 2, quality: "m7b5", function: "SD", beats: 4},
+            {degree: 5, rootOffset: 7, quality: "7b9", function: "D", beats: 4},
+            {degree: 1, rootOffset: 0, quality: "mMaj7", function: "T", beats: 4},
+            {degree: 1, rootOffset: 0, quality: "m6", function: "T", beats: 4},
+        ],
+        tags: [["理論", "コードを変化させる", "テンション"], ["雰囲気", "都会の夜", "午前二時のバー"], ["ジャンル", "Jazz", "スタンダード・ジャズ"]]
+    },
+    {
+        id: "lush_major", category: "Jazz / R&B / Soul",
+        name: "Imaj9 - IVmaj9 - iii7 - vi9", description: "Imaj9 - IVmaj9 - iii7 - vi9",
+        bpm: 78, meter: "4/4", bars: 4, scale: "MAJOR", rhythm: "HIPHOP", timing: "JPOP",
+        recommendedStyle: "STYLE_LOFI",
+        chords: [
+            {degree: 1, rootOffset: 0, quality: "Maj9", function: "T", beats: 4},
+            {degree: 4, rootOffset: 5, quality: "Maj9", function: "SD", beats: 4},
+            {degree: 3, rootOffset: 4, quality: "m7", function: "T", beats: 4},
+            {degree: 6, rootOffset: 9, quality: "m9", function: "T", beats: 4},
+        ],
+        tags: [["ジャンル", "Lo-fi / Chill", "Chillout"], ["雰囲気", "不思議な既視感", "現実と夢のあいだ"], ["理論", "コードを変化させる", "テンション"], ["ジャンル", "Lo-fi / Chill", "Lo-fi Hip-Hop"], ["ジャンル", "Lo-fi / Chill", "Chillhop"], ["雰囲気", "不思議な既視感", "夢の中の帰り道"]]
+    },
+    {
+        id: "blues_12bar", category: "Bass / Structure / Chord Color / Form",
+        name: "12小節ブルース", description: "I7 - I7 - I7 - I7 - IV7 - IV7 - I7 - I7 - V7 - IV7 - I7 - V7",
+        bpm: 100, meter: "4/4", bars: 12, scale: "MIXOLYDIAN", rhythm: "BLUES_SHUFFLE", timing: "BLUES",
+        chords: [
+            {degree: 1, rootOffset: 0, quality: "7", function: "T", beats: 4},
+            {degree: 1, rootOffset: 0, quality: "7", function: "T", beats: 4},
+            {degree: 1, rootOffset: 0, quality: "7", function: "T", beats: 4},
+            {degree: 1, rootOffset: 0, quality: "7", function: "T", beats: 4},
+            {degree: 4, rootOffset: 5, quality: "7", function: "SD", beats: 4},
+            {degree: 4, rootOffset: 5, quality: "7", function: "SD", beats: 4},
+            {degree: 1, rootOffset: 0, quality: "7", function: "T", beats: 4},
+            {degree: 1, rootOffset: 0, quality: "7", function: "T", beats: 4},
+            {degree: 5, rootOffset: 7, quality: "7", function: "D", beats: 4},
+            {degree: 4, rootOffset: 5, quality: "7", function: "SD", beats: 4},
+            {degree: 1, rootOffset: 0, quality: "7", function: "T", beats: 4},
+            {degree: 5, rootOffset: 7, quality: "7", function: "D", beats: 4},
+        ],
+        tags: [["ジャンル", "Blues", "12小節ブルース"], ["ジャンル", "Rock", "ロックンロール"], ["ジャンル", "Blues", "Chicago Blues"], ["理論", "同じ形をずらす", "同じ関係を繰り返す"], ["雰囲気", "映画のような世界", "夜明け前のピアノ"]]
+    },
+    {
+        id: "funk_groove", category: "Bass / Structure / Chord Color / Form",
+        name: "Funk Groove", description: "i7 - IV7 - i7 - V7",
+        bpm: 102, meter: "4/4", bars: 4, scale: "MINOR_PENTATONIC", rhythm: "FUNK_16", timing: "FUNK",
+        recommendedStyle: "STYLE_FUNK",
+        chords: [
+            {degree: 1, rootOffset: 0, quality: "m7", function: "T", beats: 4},
+            {degree: 4, rootOffset: 5, quality: "7", function: "SD", beats: 4},
+            {degree: 1, rootOffset: 0, quality: "m7", function: "T", beats: 4},
+            {degree: 5, rootOffset: 7, quality: "7", function: "D", beats: 4},
+        ],
+        tags: [["ジャンル", "Funk", "70年代ファンク"], ["ジャンル", "Funk", "P-Funk系"], ["ジャンル", "Soul", "ファンク寄りソウル"], ["理論", "コードを変化させる", "7th"], ["雰囲気", "映画のような世界", "夜明け前のピアノ"]]
+    },
+    {
+        id: "waltz_gentle", category: "Bass / Structure / Chord Color / Form",
+        name: "優雅なワルツ", description: "I - vi - ii - V",
+        bpm: 90, meter: "3/4", bars: 4, scale: "MAJOR", rhythm: "WALTZ", timing: "WALTZ",
+        chords: [
+            {degree: 1, rootOffset: 0, quality: "Maj", function: "T", beats: 3},
+            {degree: 6, rootOffset: 9, quality: "m", function: "T", beats: 3},
+            {degree: 2, rootOffset: 2, quality: "m", function: "SD", beats: 3},
+            {degree: 5, rootOffset: 7, quality: "Maj", function: "D", beats: 3},
+        ],
+        tags: [["雰囲気", "映画のような世界", "夜明け前のピアノ"], ["ジャンル", "映画・劇伴", "オーケストラ劇伴"], ["理論", "行き先を感じる", "進みたくなる"]]
+    },
+    {
+        id: "pedal_point", category: "Bass / Structure / Chord Color / Form",
+        name: "トニック・ペダル", description: "I - IV/I - V/I - I",
+        bpm: 88, meter: "4/4", bars: 4, scale: "MAJOR", rhythm: "SUSTAIN", timing: "JPOP",
+        chords: [
+            {degree: 1, rootOffset: 0, quality: "Maj", function: "T", beats: 4, bassOffset: 0},
+            {degree: 4, rootOffset: 5, quality: "Maj", function: "SD", beats: 4, bassOffset: 0},
+            {degree: 5, rootOffset: 7, quality: "Maj", function: "D", beats: 4, bassOffset: 0},
+            {degree: 1, rootOffset: 0, quality: "Maj", function: "T", beats: 4, bassOffset: 0},
+        ],
+        tags: [["理論", "ベースを動かす", "ペダル"], ["理論", "音を残して変える", "ベースだけ変える"], ["雰囲気", "映画のような世界", "夜明け前のピアノ"], ["ジャンル", "Folk / Acoustic", "Acoustic Pop"]]
+    },
+    {
+        id: "line_cliche_desc", category: "Bass / Structure / Chord Color / Form",
+        name: "クリシェ下降 (ラインクリシェ)", description: "i - iMaj7 - i7 - i6",
+        bpm: 85, meter: "4/4", bars: 4, scale: "MINOR", rhythm: "SUSTAIN", timing: "BALLAD",
+        chords: [
+            {degree: 1, rootOffset: 0, quality: "m", function: "T", beats: 4},
+            {degree: 1, rootOffset: 0, quality: "mMaj7", function: "T", beats: 4},
+            {degree: 1, rootOffset: 0, quality: "m7", function: "T", beats: 4},
+            {degree: 1, rootOffset: 0, quality: "m6", function: "T", beats: 4},
+        ],
+        tags: [["理論", "音を残して変える", "一つの音だけ変える"], ["雰囲気", "大人の哀愁", "グラスの氷が溶ける頃"], ["ジャンル", "Jazz", "ジャズバラード"]]
+    },
+    {
+        id: "descending_bass", category: "Bass / Structure / Chord Color / Form",
+        name: "I - V/7 - vi - iii/5", description: "I - V/7 - vi - iii/5",
+        bpm: 88, meter: "4/4", bars: 4, scale: "MAJOR", rhythm: "SUSTAIN", timing: "JPOP",
+        chords: [
+            {degree: 1, rootOffset: 0, quality: "Maj", function: "T", beats: 4},
+            {degree: 5, rootOffset: 7, quality: "Maj", function: "D", beats: 4, bassOffset: 11},
+            {degree: 6, rootOffset: 9, quality: "m", function: "T", beats: 4},
+            {degree: 3, rootOffset: 4, quality: "m", function: "T", beats: 4, bassOffset: 7},
+        ],
+        tags: [["理論", "ベースを動かす", "下降"], ["雰囲気", "映画のような世界", "夜明け前のピアノ"], ["ジャンル", "Folk / Acoustic", "Acoustic Pop"]]
+    },
+    {
+        id: "chromatic_bass", category: "Bass / Structure / Chord Color / Form",
+        name: "I - Imaj7/7 - I7/b7 - IV/6", description: "I - Imaj7/7 - I7/b7 - IV/6",
+        bpm: 80, meter: "4/4", bars: 4, scale: "MAJOR", rhythm: "SUSTAIN", timing: "JPOP",
+        chords: [
+            {degree: 1, rootOffset: 0, quality: "Maj", function: "T", beats: 4},
+            {degree: 1, rootOffset: 0, quality: "Maj7", function: "T", beats: 4, bassOffset: 11},
+            {degree: 1, rootOffset: 0, quality: "7", function: "T", beats: 4, bassOffset: 10},
+            {degree: 4, rootOffset: 5, quality: "Maj", function: "SD", beats: 4, bassOffset: 9},
+        ],
+        tags: [["理論", "音を残して変える", "同一ルート"], ["雰囲気", "映画のような世界", "夜明け前のピアノ"], ["ジャンル", "Folk / Acoustic", "Acoustic Pop"], ["理論", "ベースを動かす", "下降"]]
+    },
+    {
+        id: "slash_walk_up", category: "Bass / Structure / Chord Color / Form",
+        name: "I/1 - V/2 - I/3 - IV", description: "I/1 - V/2 - I/3 - IV",
+        bpm: 88, meter: "4/4", bars: 4, scale: "MAJOR", rhythm: "SUSTAIN", timing: "JPOP",
+        chords: [
+            {degree: 1, rootOffset: 0, quality: "Maj", function: "T", beats: 4, bassOffset: 0},
+            {degree: 5, rootOffset: 7, quality: "Maj", function: "D", beats: 4, bassOffset: 2},
+            {degree: 1, rootOffset: 0, quality: "Maj", function: "T", beats: 4, bassOffset: 4},
+            {degree: 4, rootOffset: 5, quality: "Maj", function: "SD", beats: 4},
+        ],
+        tags: [["理論", "ベースを動かす", "上昇"], ["雰囲気", "映画のような世界", "夜明け前のピアノ"], ["ジャンル", "Folk / Acoustic", "Acoustic Pop"]]
+    },
+    {
+        id: "same_root_colors", category: "Bass / Structure / Chord Color / Form",
+        name: "I - I6 - Imaj7 - Iadd9", description: "I - I6 - Imaj7 - Iadd9",
+        bpm: 76, meter: "4/4", bars: 4, scale: "MAJOR", rhythm: "SUSTAIN", timing: "JPOP",
+        chords: [
+            {degree: 1, rootOffset: 0, quality: "Maj", function: "T", beats: 4},
+            {degree: 1, rootOffset: 0, quality: "6", function: "T", beats: 4},
+            {degree: 1, rootOffset: 0, quality: "Maj7", function: "T", beats: 4},
+            {degree: 1, rootOffset: 0, quality: "add9", function: "T", beats: 4},
+        ],
+        tags: [["理論", "音を残して変える", "同一ルート"], ["雰囲気", "映画のような世界", "夜明け前のピアノ"], ["ジャンル", "Folk / Acoustic", "Acoustic Pop"]]
+    },
+    {
+        id: "extended_colors", category: "Bass / Structure / Chord Color / Form",
+        name: "Imaj7 - Imaj9 - Imaj7#11 - I6", description: "Imaj7 - Imaj9 - Imaj7#11 - I6",
+        bpm: 72, meter: "4/4", bars: 4, scale: "MAJOR", rhythm: "SUSTAIN", timing: "JPOP",
+        chords: [
+            {degree: 1, rootOffset: 0, quality: "Maj7", function: "T", beats: 4},
+            {degree: 1, rootOffset: 0, quality: "Maj9", function: "T", beats: 4},
+            {degree: 1, rootOffset: 0, quality: "Maj7#11", function: "T", beats: 4},
+            {degree: 1, rootOffset: 0, quality: "6", function: "T", beats: 4},
+        ],
+        tags: [["理論", "音を残して変える", "同一ルート"], ["雰囲気", "映画のような世界", "夜明け前のピアノ"], ["ジャンル", "Folk / Acoustic", "Acoustic Pop"]]
+    },
+    {
+        id: "sus_resolution", category: "Bass / Structure / Chord Color / Form",
+        name: "sus4 → Maj", description: "Isus4 - I",
+        bpm: 72, meter: "4/4", bars: 4, scale: "MAJOR", rhythm: "SUSTAIN", timing: "JPOP",
+        chords: [
+            {degree: 1, rootOffset: 0, quality: "sus4", function: "T", beats: 8},
+            {degree: 1, rootOffset: 0, quality: "Maj", function: "T", beats: 8},
+        ],
+        tags: [["理論", "音を残して変える", "同一ルート"], ["雰囲気", "映画のような世界", "夜明け前のピアノ"], ["ジャンル", "Folk / Acoustic", "Acoustic Pop"], ["理論", "コードを変化させる", "sus"]]
+    },
+    {
+        id: "dim_to_minor", category: "Bass / Structure / Chord Color / Form",
+        name: "dim → minor", description: "i° - i",
+        bpm: 68, meter: "4/4", bars: 4, scale: "MINOR", rhythm: "SUSTAIN", timing: "JPOP",
+        chords: [
+            {degree: 1, rootOffset: 0, quality: "dim", function: "D", beats: 8},
+            {degree: 1, rootOffset: 0, quality: "m", function: "T", beats: 8},
+        ],
+        tags: [["理論", "音を残して変える", "同一ルート"], ["雰囲気", "映画のような世界", "夜明け前のピアノ"], ["ジャンル", "Folk / Acoustic", "Acoustic Pop"]]
+    },
+    {
+        id: "dominant_to_ninth", category: "Bass / Structure / Chord Color / Form",
+        name: "7 → 9", description: "V7 - V9",
+        bpm: 76, meter: "4/4", bars: 4, scale: "MAJOR", rhythm: "SUSTAIN", timing: "JPOP",
+        chords: [
+            {degree: 5, rootOffset: 7, quality: "7", function: "D", beats: 8},
+            {degree: 5, rootOffset: 7, quality: "9", function: "D", beats: 8},
+        ],
+        tags: [["理論", "音を残して変える", "同一ルート"], ["雰囲気", "映画のような世界", "夜明け前のピアノ"], ["ジャンル", "Folk / Acoustic", "Acoustic Pop"]]
+    },
 ];
 
 // R1-1: these contexts own only information that legacy state cannot distinguish.
@@ -1330,7 +1744,7 @@ function createPerformanceContext(scale, displaySource = "legacy") {
     return {
         harmony: Object.freeze({ manualHarmony: null, displaySource }),
         // A next-input choice is not a sounding chord or a display override.
-        input: { nextQuality: null },
+        input: { nextQuality: null, nextBass: null, bassRoot: null },
         scale
     };
 }
@@ -1393,7 +1807,7 @@ function getAccompanimentHarmony() {
 }
 
 // Replace the pair atomically: no observable manual source with a null chord.
-function activateManualHarmony(root, quality, contextName = getPerformanceContextName(), timestamp = performance.now()) {
+function activateManualHarmony(root, quality, contextName = getPerformanceContextName(), timestamp = performance.now(), bass = null) {
     const context = state.contexts[contextName];
     if (!Object.prototype.hasOwnProperty.call(state.contexts, contextName) || noteIndex(root) < 0 || !Object.prototype.hasOwnProperty.call(CHORD_TYPES, quality)) {
         throw new Error("Invalid manual harmony context, root or quality");
@@ -1403,7 +1817,7 @@ function activateManualHarmony(root, quality, contextName = getPerformanceContex
     // Equal timestamps deliberately keep manual input, in either processing order.
     if (contextName === "PRESET" && state.presetPlayback.lastTransitionTimestamp !== null &&
         timestamp < state.presetPlayback.lastTransitionTimestamp) return;
-    const manualHarmony = Object.freeze({ root, quality });
+    const manualHarmony = Object.freeze(withHarmonyBass({ root, quality }, bass));
     context.harmony = Object.freeze({ manualHarmony, displaySource: "manual", manualEventTimestamp: timestamp });
 }
 
@@ -1432,15 +1846,19 @@ function getDisplayedQualitySelection() {
 function selectInputQuality(quality) {
     if (state.mode === "FREE") {
         state.currentQuality = quality;
-        if (!replaceHeldLeftQuality(state.currentRoot, quality)) audio.playChord(state.currentRoot, 3, quality);
+        const harmony = getDisplayHarmony();
+        if (!replaceHeldLeftQuality(harmony.root, quality, harmony.bass)) playManualHarmony(harmony);
     } else {
         const context = state.contexts.PRESET;
         context.input.nextQuality = quality;
-        if (context.harmony.displaySource === "manual" && context.harmony.manualHarmony !== null) {
-            const root = context.harmony.manualHarmony.root;
-            activateManualHarmony(root, quality, "PRESET");
-            if (!replaceHeldLeftQuality(root, quality)) audio.playChord(root, 3, quality);
-        }
+        const current = getDisplayHarmony();
+        const selectedBass = getManualBassForRoot(current.root);
+        const bass = selectedBass !== undefined ? selectedBass : current.bass;
+        const harmony = withHarmonyBass({ root: current.root, quality }, bass);
+        if (context.harmony.displaySource === "manual" || harmony.bass !== undefined) {
+            activateManualHarmony(harmony.root, quality, "PRESET", performance.now(), harmony.bass);
+            if (!replaceHeldLeftQuality(harmony.root, quality, harmony.bass)) playManualHarmony(harmony);
+        } else playManualHarmony(harmony); // Audition only, preserving source CURRENT and Timeline.
     }
     updateUI();
 }
@@ -1448,8 +1866,75 @@ function selectInputQuality(quality) {
 // Musical-context reset only; clearing an override alone must not reset input choice.
 function resetManualInputContext(contextName = getPerformanceContextName()) {
     clearManualHarmony(contextName);
-    if (contextName === "PRESET") state.contexts.PRESET.input.nextQuality = null;
+    if (contextName === "PRESET") {
+        state.contexts.PRESET.input.nextQuality = null;
+        clearManualBassChoice("PRESET");
+    }
 }
+
+// SLASH BASS INPUT BEGIN: a manual bass choice belongs to one root/context.
+function clearManualBassChoice(contextName = getPerformanceContextName()) {
+    const input = state.contexts[contextName].input;
+    input.nextBass = null;
+    input.bassRoot = null;
+}
+
+function setManualBassChoice(root, bass) {
+    const input = state.contexts[getPerformanceContextName()].input;
+    input.bassRoot = normalizeNote(root);
+    input.nextBass = normalizeHarmonyBass(bass);
+}
+
+function getManualBassForRoot(root) {
+    const input = state.contexts[getPerformanceContextName()].input;
+    return input.bassRoot !== null && noteIndex(input.bassRoot) === noteIndex(root) ? input.nextBass : undefined;
+}
+
+function getLeftInputHarmony(note, nextOccurrence = null) {
+    if (nextOccurrence) return getHarmonyFromOccurrence(nextOccurrence);
+    if (state.mode === "FREE") return withHarmonyBass({ root: note, quality: getFreeManualInputQuality(note) }, getManualBassForRoot(note));
+    const manual = getManualHarmony(), current = getAccompanimentHarmony();
+    const explicitBass = getManualBassForRoot(note);
+    const bass = explicitBass !== undefined ? explicitBass :
+        manual && noteIndex(manual.root) === noteIndex(note) ? manual.bass :
+        noteIndex(current.root) === noteIndex(note) ? current.bass : null;
+    return withHarmonyBass({ root: note, quality: getPresetManualInputQuality() }, bass);
+}
+
+function playManualHarmony(harmony, { held = false, timestamp = null } = {}) {
+    if (held) return audio.startChordGroup(harmony.root, 3, harmony.quality, { timestamp, bass: harmony.bass });
+    return harmony.bass === undefined ? audio.playChord(harmony.root, 3, harmony.quality)
+        : audio.playChord(harmony.root, 3, harmony.quality, 0.015, "manual-left", harmony.bass);
+}
+
+function selectInputBass(bass) {
+    const current = getDisplayHarmony();
+    const harmony = withHarmonyBass({ root: current.root, quality: getDisplayedQualitySelection() }, bass);
+    setManualBassChoice(harmony.root, harmony.bass);
+    if (state.mode === "FREE") state.currentQuality = harmony.quality;
+    else activateManualHarmony(harmony.root, harmony.quality, "PRESET", performance.now(), harmony.bass);
+    state.currentRoot = harmony.root;
+    if (!replaceHeldLeftQuality(harmony.root, harmony.quality, harmony.bass)) playManualHarmony(harmony);
+    updateUI();
+}
+
+function auditionPresetHarmony(occurrence, advance = false) {
+    if (!occurrence) return;
+    const harmony = getHarmonyFromOccurrence(occurrence);
+    if (advance) {
+        seekPresetHarmonyOccurrence(occurrence);
+        clearManualHarmony("PRESET");
+    } else {
+        state.contexts.PRESET.input.nextQuality = harmony.quality;
+        activateManualHarmony(harmony.root, harmony.quality, "PRESET", performance.now(), harmony.bass);
+    }
+    setManualBassChoice(harmony.root, harmony.bass);
+    state.currentRoot = harmony.root;
+    state.currentQuality = harmony.quality;
+    playManualHarmony(harmony);
+    updateUI();
+}
+// SLASH BASS INPUT END
 
 // Filtering selects a candidate ID; activate it only when the preset changed.
 function activatePresetAfterCatalogChange(previousPresetId) {
@@ -1473,7 +1958,7 @@ function getDisplayHarmony() {
             // Preserve CURRENT/right-key harmony without calling it manual input:
             // the old fields are also written by preset loading and autoplay.
             return state.mode === "FREE"
-                ? Object.freeze({ root: state.currentRoot, quality: state.currentQuality })
+                ? Object.freeze(withHarmonyBass({ root: state.currentRoot, quality: state.currentQuality }, getManualBassForRoot(state.currentRoot)))
                 : getAccompanimentHarmony();
         default:
             throw new Error(`Unknown display harmony source: ${source}`);
@@ -1509,15 +1994,69 @@ function getPlaybackContext() {
 }
 
 const PRESET_CHORD_TIMINGS = {
-    basic_cycle:[0,4,8,12], basic_cadence:[0,4,8,12], basic_upward:[0,4,8,12], basic_downward:[0,4,8,12],
-    classic_cycle:[0,4,8,12], canon_prog:[0,2,4,6,8,10,12,14], komawari:[0,4,8,12],
-    just_two_of_us:[0,3.5,7.5,11], bittersweet:[0,4,8,12], bright_pop:[0,4,8,12], floating_chill:[0,4,8,12],
-    city_night:[0,3.5,7.5,11], bossa_breeze:[0,3,7,11],
-    blues_12bar:[0,4,8,12,16,20,24,28,32,36,40,44], funk_groove:[0,3.5,7,10.5],
-    fantasy_hero:[0,4,8,12], lofi_dream:[0,4,8,12], subdominant_minor:[0,4,8,12], deceptive_resolution:[0,4,8,12],
-    pedal_point:[0,4,8,12], ska_bounce:[0,4,8,12], waltz_gentle:[0,3,6,9], line_cliche_desc:[0,4,8,12],
-    secondary_dominant:[0,3.5,7,11], andalusian:[0,4,8,12], modal_dorian:[0,4,8,12], anime_heroic:[0,4,8,12],
-    neo_soul_breeze:[0,3.5,7.5,11], summer_nostalgia:[0,4,8,12], pass_through_dim:[0,2,4,8], dark_synthwave:[0,4,8,12]
+    basic_dominant: [0, 4, 8],
+    basic_subdominant: [0, 4, 8],
+    basic_cadence: [0, 4, 8, 12],
+    basic_cycle: [0, 4, 8, 12],
+    basic_ii_v_i: [0, 4, 8],
+    basic_turnaround: [0, 4, 8, 12],
+    basic_ii_v_i_vi: [0, 4, 8, 12],
+    summer_nostalgia: [0, 4, 8, 12],
+    basic_upward: [0, 4, 8, 12],
+    basic_downward: [0, 4, 8, 12],
+    classic_cycle: [0, 4, 8, 12],
+    canon_prog: [0, 2, 4, 6, 8, 10, 12, 14],
+    pop_1564: [0, 4, 8, 12],
+    bittersweet: [0, 4, 8, 12],
+    bright_pop: [0, 4, 8, 12],
+    pop_4156: [0, 4, 8, 12],
+    pop_1465: [0, 4, 8, 12],
+    pop_6545: [0, 4, 8, 12],
+    pop_1364: [0, 4, 8, 12],
+    pop_4561: [0, 4, 8, 12],
+    minor_cadence: [0, 4, 8, 12],
+    dark_synthwave: [0, 4, 8, 12],
+    andalusian: [0, 4, 8, 12],
+    fantasy_hero: [0, 4, 8, 12],
+    minor_rise: [0, 4, 8, 12],
+    minor_1374: [0, 4, 8, 12],
+    minor_1473: [0, 4, 8, 12],
+    modal_dorian: [0, 4, 8, 12],
+    minor_flat7_vamp: [0, 4, 8, 12],
+    minor_dramatic: [0, 4, 8, 12],
+    subdominant_minor: [0, 4, 8, 12],
+    deceptive_resolution: [0, 4, 8, 12],
+    secondary_dominant: [0, 3.5, 7, 11],
+    secondary_to_v: [0, 4, 8, 12],
+    secondary_to_vi: [0, 4, 8, 12],
+    passing_dim7: [0, 2, 4, 8],
+    borrowed_flat7: [0, 4, 8, 12],
+    borrowed_flat3: [0, 4, 8, 12],
+    augmented_pull: [0, 4, 8, 12],
+    dominant_sus: [0, 4, 8, 12],
+    jazz_251: [0, 4, 8],
+    bossa_breeze: [0, 3, 7, 11],
+    jazz_turnaround: [0, 4, 8, 12],
+    jazz_1625: [0, 4, 8, 12],
+    rnb_4361: [0, 3.5, 7.5, 11],
+    komawari: [0, 4, 8, 12],
+    jazz_6251: [0, 4, 8, 12],
+    neo_soul_breeze: [0, 3.5, 7.5, 11],
+    minor_251: [0, 4, 8, 12],
+    lush_major: [0, 4, 8, 12],
+    blues_12bar: [0, 4, 8, 12, 16, 20, 24, 28, 32, 36, 40, 44],
+    funk_groove: [0, 3.5, 7, 10.5],
+    waltz_gentle: [0, 3, 6, 9],
+    pedal_point: [0, 4, 8, 12],
+    line_cliche_desc: [0, 4, 8, 12],
+    descending_bass: [0, 4, 8, 12],
+    chromatic_bass: [0, 4, 8, 12],
+    slash_walk_up: [0, 4, 8, 12],
+    same_root_colors: [0, 4, 8, 12],
+    extended_colors: [0, 4, 8, 12],
+    sus_resolution: [0, 8],
+    dim_to_minor: [0, 8],
+    dominant_to_ninth: [0, 8],
 };
 Object.entries(PRESET_CHORD_TIMINGS).forEach(([id,starts])=>{
     const preset=PRESETS.find(p=>p.id===id); if(!preset||!preset.chords)return;
@@ -1831,34 +2370,30 @@ function resolveMatchedPresetTimelines(presets, timingSource = "beats-derived") 
 // R2-2A user decisions (2026-10-03): only these exact preset timings are approved.
 // Keep expected starts/end with the decision so later source edits require review.
 const HARMONY_TIMING_RESOLUTIONS = Object.freeze({
-    just_two_of_us: Object.freeze({
-        timingSource: "explicit-start", starts: Object.freeze([0, 3.5, 7.5, 11]), endBeat: 16,
-        rationale: "R&B系の和声変化として、小節頭へ固定しないanticipationを残す。"
+    secondary_dominant: Object.freeze({
+        timingSource: "explicit-start", starts: Object.freeze([0, 3.5, 7, 11]), endBeat: 16,
+        rationale: "I → VI7 → ii7 → V7の連鎖感を強め、前半を前へ進ませて最後のV7を長く保持する。"
     }),
-    city_night: Object.freeze({
-        timingSource: "explicit-start", starts: Object.freeze([0, 3.5, 7.5, 11]), endBeat: 16,
-        rationale: "Hip-Hop系ループの和声変化を小節頭固定にせず、半拍の食い込みを残す。"
+    passing_dim7: Object.freeze({
+        timingSource: "explicit-start", starts: Object.freeze([0, 2, 4, 8]), endBeat: 16,
+        rationale: "Passing diminishedを2拍とし、既存の0 / 2 / 4 / 8開始位置とV7の長い保持を維持する。beatsも同じ長さへ正規化した。"
     }),
     bossa_breeze: Object.freeze({
         timingSource: "explicit-start", starts: Object.freeze([0, 3, 7, 11]), endBeat: 16,
         rationale: "和声変化自体に前進感を持たせる。将来のAccompaniment Event分離は別判断とし、現在のHarmony Timelineではexplicitを採用する。"
     }),
-    funk_groove: Object.freeze({
-        timingSource: "explicit-start", starts: Object.freeze([0, 3.5, 7, 10.5]), endBeat: 16,
-        rationale: "3.5拍単位でコードチェンジ位置が小節線に対して移動すること自体をグルーヴの一部とする。"
-    }),
-    secondary_dominant: Object.freeze({
-        timingSource: "explicit-start", starts: Object.freeze([0, 3.5, 7, 11]), endBeat: 16,
-        rationale: "I → VI7 → ii7 → V7の連鎖感を強め、前半を前へ進ませて最後のV7を長く保持する。"
+    rnb_4361: Object.freeze({
+        timingSource: "explicit-start", starts: Object.freeze([0, 3.5, 7.5, 11]), endBeat: 16,
+        rationale: "旧just_two_of_usとcity_nightの共通anticipationを一般名Presetへ統合し、開始0 / 3.5 / 7.5 / 11を維持する。"
     }),
     neo_soul_breeze: Object.freeze({
         timingSource: "explicit-start", starts: Object.freeze([0, 3.5, 7.5, 11]), endBeat: 16,
         rationale: "Neo Soul系の和声変化として、小節頭へ固定しないanticipationを残す。"
     }),
-    pass_through_dim: Object.freeze({
-        timingSource: "explicit-start", starts: Object.freeze([0, 2, 4, 8]), endBeat: 16,
-        rationale: "C#dimをC → C#dim → Dmのpassing diminishedとして短く扱い、最後のG7を長く保持して次周期のIへの解決を作る。"
-    })
+    funk_groove: Object.freeze({
+        timingSource: "explicit-start", starts: Object.freeze([0, 3.5, 7, 10.5]), endBeat: 16,
+        rationale: "3.5拍単位でコードチェンジ位置が小節線に対して移動すること自体をグルーヴの一部とする。"
+    }),
 });
 
 function resolveHarmonyTimeline(preset, matchedTimingSource = "beats-derived") {
@@ -2201,7 +2736,7 @@ function seekPresetHarmonySection(sectionIndex, timestamp = performance.now()) {
 function getHarmonyFromOccurrence(occurrence) {
     if (occurrence === null) return null;
     const chord = occurrence.chordDefinition;
-    return { ...chord, root: getAbsoluteRoot(chord) };
+    return resolvePresetChordHarmony(chord, state.key);
 }
 
 function getActiveRhythmKey() {
@@ -2222,10 +2757,7 @@ function getProgression() {
     const preset = getPreset();
     const chords = state.mode === "FREE" ? preset.chords
         : getResolvedPresetHarmonyTimeline().sections.map(section => section.chordDefinition);
-    return chords.map(chord => ({
-        ...chord,
-        root: getAbsoluteRoot(chord)
-    }));
+    return chords.map(chord => resolvePresetChordHarmony(chord, state.key));
 }
 
 function getCurrentStep() {
@@ -2274,6 +2806,18 @@ const FUTURE_DESTINATION_VALUES = freezeResolvedHarmonyData({
     sus4: [[95,45],[65,100],[85,45]], dim: [[85,55],[75,80],[60,100]],
     aug: [[90,50],[80,75],[60,100]], add9: [[100,40],[90,75],[85,30],[70,100]]
 });
+// QUALITY NEUTRAL GUIDANCE BEGIN: explicit fallback for qualities awaiting tuning.
+const FUTURE_NEUTRAL_DESTINATION = Object.freeze({ stability: 50, character: 50, status: "provisional-neutral" });
+function deriveFutureDestinationEvaluation(quality, toneIndex) {
+    if (!Object.prototype.hasOwnProperty.call(CHORD_TYPES, quality) ||
+        !Number.isInteger(toneIndex) || toneIndex < 0 || toneIndex >= CHORD_TYPES[quality].semitones.length)
+        throw new RangeError("Invalid destination quality/tone");
+    const tuned = FUTURE_DESTINATION_VALUES[quality]?.[toneIndex];
+    return tuned ? { stability: tuned[0], character: tuned[1], status: "tuned" }
+        : { ...FUTURE_NEUTRAL_DESTINATION };
+}
+// QUALITY NEUTRAL GUIDANCE END
+
 const FUTURE_BASE_DISTANCE = Object.freeze([100,95,90,80,76,68,60]);
 const FUTURE_LEGACY_STEP_SCORE = Object.freeze({1: 2, 2: 3, 3: 1});
 
@@ -2357,7 +2901,9 @@ function deriveFutureGuidance(input) {
             sourcePitch: context.trajectory?.lastPitch ?? null, targetPitch: null, actual: null };
         // PC common-tone relation is not a claim of actual-pitch common-tone hold.
         c.isCommonPitchClassHold = last === tone.pitchClass && c.roles.includes("common-tone");
-        const [stability, character] = FUTURE_DESTINATION_VALUES[context.nextHarmony.quality][index];
+        const destination = deriveFutureDestinationEvaluation(context.nextHarmony.quality, index);
+        const { stability, character } = destination;
+        c.destinationEvaluation = destination.status;
         const factor = last === null ? 1 : weights.destination;
         add(c, "destination-stability", stability * weights.stability * factor);
         add(c, "destination-character", character * weights.character * factor);
@@ -2776,14 +3322,17 @@ class AudioEngine {
     }
 
     startChordGroup(root, octave, quality, { owner = "manual-left", held = true,
-        strumDelay = 0.015, timestamp = null } = {}) {
+        strumDelay = 0.015, timestamp = null, bass = null } = {}) {
         if (!this.ctx || this.ctx.state !== "running") this.resume(); // R7-2.1: no running-context resume
+        const bassNote = normalizeHarmonyBass(bass);
         const groupId = this.createVoiceGroup(owner, { root, octave, quality, timestamp,
-            timbre: state.timbre }, held);
+            timbre: state.timbre, ...(bassNote === null ? {} : { bass: bassNote }) }, held);
         const group = this.groups.get(groupId);
         group.building = true;
         const def = CHORD_TYPES[quality] || CHORD_TYPES.Maj;
         const rootIdx = noteIndex(root);
+        if (bassNote !== null) this.startTone(bassNote, Math.min(2, octave - 1),
+            0.8, group.snapshot.timbre, 0.18, groupId, held);
         def.semitones.forEach((semitone, i) => {
             const noteIdx = rootIdx + semitone;
             const trigger = () => {
@@ -2803,8 +3352,8 @@ class AudioEngine {
         return groupId;
     }
 
-    playChord(root, octave, quality, strumDelay = 0.015, owner = "manual-left") {
-        return this.startChordGroup(root, octave, quality, { held: false, strumDelay, owner });
+    playChord(root, octave, quality, strumDelay = 0.015, owner = "manual-left", bass = null) {
+        return this.startChordGroup(root, octave, quality, { held: false, strumDelay, owner, bass });
     }
 
     playBass(root, octave = 2) {
@@ -2952,8 +3501,8 @@ class AudioEngine {
                 }
             });
         } else if (event.part === "bass") {
-            // Literal source bass remains on event.bass; transposition semantics are not guessed.
-            const pitch = resolveStyleBassPitch(event.harmony.root,event.relativeSemitones);
+            // Harmonic slash bass supplies the base pitch; Style owns rhythm/relative motion.
+            const pitch = resolveStyleBassPitch(normalizeHarmonyBass(event.harmony.bass) ?? event.harmony.root,event.relativeSemitones);
             this.startTone(pitch.note,pitch.octave,event.duration,"piano",event.velocity,groupId,false,audioTime);
         } else if (event.part === "drum") {
             const method = { kick: "playKick", snare: "playSnare", hat: "playHat", clap: "playClap" }[event.instrument];
@@ -3118,7 +3667,7 @@ function generateAccompanimentEvents({ timeline, style, policy, key, fromBeat, t
             const playback = deriveHarmonyPlaybackPosition(timeline, policy, timelineBeat);
             const occurrence = playback.currentOccurrence;
             const chordDefinition = copyHarmonyTimelineData(occurrence.chordDefinition);
-            const root = NOTE_NAMES[(noteIndex(key) + chordDefinition.rootOffset) % 12];
+            const harmony = resolvePresetChordHarmony(chordDefinition, key);
             let gate = {};
             if (pattern.gatePolicy) {
                 const nextAttackBeat = pattern.gatePolicy === "next-attack-95"
@@ -3133,10 +3682,10 @@ function generateAccompanimentEvents({ timeline, style, policy, key, fromBeat, t
                 styleId: style.id, owner: pattern.part === "drum" ? "drums" : "accompaniment",
                 timelineBeat, audioBeat, sectionId: occurrence.sectionId,
                 occurrenceId: occurrence.occurrenceId, cycleIndex: occurrence.cycleIndex,
-                harmony: { ...chordDefinition, root }, chordDefinition,
-                // Bass metadata is preserved, but legacy root-bass playback is explicit.
-                bass: copyHarmonyTimelineData(chordDefinition.bass ?? null),
-                bassPolicy: pattern.relativeSemitones === undefined ? "legacy-root-compatibility" : "style-relative-root" });
+                harmony, chordDefinition,
+                bass: harmony.bass ?? null,
+                bassPolicy: harmony.bass !== undefined ? "style-relative-harmonic-bass" :
+                    pattern.relativeSemitones === undefined ? "legacy-root-compatibility" : "style-relative-root" });
         }
     }
     events.sort((a,b)=>a.audioBeat-b.audioBeat || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
@@ -3311,7 +3860,10 @@ function playFreeAccompanimentStep(position) {
         fromBeat: position, toBeat: position + 0.000001 };
     for (const event of generateAccompanimentEvents(context)) {
         // FREE retains its own current-chord/input behavior; no PRESET clock writes.
-        const freeEvent = { ...event, harmony: { ...event.harmony, root: state.currentRoot, quality: state.currentQuality } };
+        const harmony = withHarmonyBass({ ...event.harmony, root: state.currentRoot, quality: state.currentQuality }, getDisplayHarmony().bass);
+        const freeEvent = { ...event, harmony, bass: harmony.bass ?? null,
+            bassPolicy: harmony.bass !== undefined ? "style-relative-harmonic-bass" :
+                event.relativeSemitones === undefined ? "legacy-root-compatibility" : "style-relative-root" };
         if (audio.ctx) audio.scheduleAccompanimentEvent(freeEvent,audio.ctx.currentTime);
     }
 }
@@ -3464,15 +4016,15 @@ function handleRightPointerMove(event) {
     key.classList.add("active");
 }
 
-function replaceHeldLeftQuality(root, quality) {
+function replaceHeldLeftQuality(root, quality, bass = null) {
     const pointers = [...manualPointers.values()].filter(pointer =>
         pointer.owner === "manual-left" && pointer.groupId === latestManualLeftGroupId &&
         pointer.snapshot.root === root);
     pointers.forEach(pointer => {
         audio.cancelVoiceGroup(pointer.groupId);
-        pointer.groupId = audio.startChordGroup(root, 3, quality, { timestamp: performance.now() });
+        pointer.groupId = audio.startChordGroup(root, 3, quality, { timestamp: performance.now(), bass });
         latestManualLeftGroupId = pointer.groupId;
-        pointer.snapshot = Object.freeze({ ...pointer.snapshot, quality });
+        pointer.snapshot = Object.freeze(withHarmonyBass({ ...pointer.snapshot, quality }, bass));
     });
     return pointers.length > 0;
 }
@@ -3758,9 +4310,8 @@ function createLeftKey(note, isBlack) {
 
     key.addEventListener("pointerdown", e => {
         const next = getLeftNextSelection(key);
-        const quality = next ? getHarmonyFromOccurrence(next).quality :
-            state.mode === "FREE" ? getFreeManualInputQuality(note) : getPresetManualInputQuality();
-        beginManualPointer(e, key, "manual-left", { root: note, quality },
+        const harmony = getLeftInputHarmony(note, next);
+        beginManualPointer(e, key, "manual-left", harmony,
             timestamp => handleLeftKey(note, timestamp, true, next));
     });
 
@@ -3851,35 +4402,23 @@ function getLeftNextSelection(key) {
 // IPAD NEXT END.
 
 function handleLeftKey(note, timestamp = performance.now(), held = false, nextOccurrence = null) {
+    const harmony = getLeftInputHarmony(note, nextOccurrence);
+    if (noteIndex(note) !== noteIndex(state.currentRoot)) clearManualBassChoice();
     if (state.mode === "FREE") {
-        const quality = getFreeManualInputQuality(note);
-        state.currentRoot = note;
-        state.currentQuality = quality;
-        const groupId = held ? audio.startChordGroup(note, 3, quality, { timestamp })
-            : audio.playChord(note, 3, state.currentQuality);
-        latestManualLeftGroupId = groupId;
-        updateUI();
-        return groupId;
-    }
-
-    if (nextOccurrence !== null) {
-        const next = getHarmonyFromOccurrence(nextOccurrence);
+        state.currentRoot = harmony.root;
+        state.currentQuality = harmony.quality;
+    } else if (nextOccurrence !== null) {
         seekPresetHarmonyOccurrence(nextOccurrence);
-        clearManualHarmony("PRESET"); // Explicit NEXT selects the source chord, not an override.
-        state.currentRoot = next.root;
-        state.currentQuality = next.quality;
-        const groupId = held ? audio.startChordGroup(next.root, 3, next.quality, { timestamp })
-            : audio.playChord(next.root, 3, next.quality);
-        latestManualLeftGroupId = groupId;
-        updateUI();
-        return groupId;
+        clearManualHarmony("PRESET");
+        state.currentRoot = harmony.root;
+        state.currentQuality = harmony.quality;
+        setManualBassChoice(harmony.root, harmony.bass);
+    } else {
+        activateManualHarmony(harmony.root, harmony.quality, "PRESET", timestamp, harmony.bass);
+        state.currentRoot = harmony.root;
+        setManualBassChoice(harmony.root, harmony.bass);
     }
-    const quality = getPresetManualInputQuality();
-    activateManualHarmony(note, quality, "PRESET", timestamp);
-    // Keep the legacy left-root label in sync; Quality input has its own source.
-    state.currentRoot = note;
-    const groupId = held ? audio.startChordGroup(note, 3, quality, { timestamp })
-        : audio.playChord(note, 3, quality);
+    const groupId = playManualHarmony(harmony, { held, timestamp });
     latestManualLeftGroupId = groupId;
     updateUI();
     return groupId;
@@ -3900,7 +4439,8 @@ function advanceChord() {
     state.currentRoot = current.root;
     state.currentQuality = current.quality;
 
-    audio.playChord(current.root, 3, current.quality);
+    setManualBassChoice(current.root, current.bass);
+    playManualHarmony(current);
     updateUI();
 }
 
@@ -4097,34 +4637,115 @@ function updateLeftKeyHighlights() {
             };
             container.appendChild(nextBtn);
         }
-        nextBtn.textContent = `NEXT: ${next.root}${next.quality}`;
+        nextBtn.textContent = `NEXT: ${formatHarmonySymbol(next)}`;
         nextBtn.style.display = "block";
     } else if (nextBtn) {
         nextBtn.style.display = "none";
     }
 }
 
+// QUALITY EXPANSION MODEL BEGIN: display tiers are independent of chord theory.
+const PERMANENT_QUALITIES = Object.freeze(["7", "Maj", "m", "Maj7", "m7", "sus4", "dim", "aug", "add9", "6", "m6", "mMaj7", "m7b5", "9"]);
+const ADVANCED_QUALITIES = Object.freeze(["Maj9", "m9", "11", "13", "dim7", "sus2", "7sus4", "7b5", "7#5", "7b9", "7#9", "Maj7#11"]);
+
+function deriveQualityChoices({ currentQuality, accompanimentQuality = null, nextQuality = null, selectedQuality = null }) {
+    const contextual = [...new Set([currentQuality, accompanimentQuality, nextQuality, selectedQuality])]
+        .filter(q => ADVANCED_QUALITIES.includes(q));
+    return { permanent: [...PERMANENT_QUALITIES], contextual,
+        normal: [...PERMANENT_QUALITIES, ...contextual],
+        advanced: ADVANCED_QUALITIES.filter(q => !contextual.includes(q)) };
+}
+// QUALITY EXPANSION MODEL END
+
+let advancedQualityOpen = false;
+let qualityButtonSignature = null;
+
+function toggleAdvancedQuality() {
+    advancedQualityOpen = !advancedQualityOpen;
+    updateQualityButtonSelection();
+}
+
 function updateQualityButtonSelection() {
     const selected = getDisplayedQualitySelection();
-    for (const btn of document.getElementById("quality-buttons").children) {
-        const active = btn.textContent === selected;
-        for (const className of ["bg-blue-600", "text-white", "border-blue-400"]) {
-            btn.classList.toggle(className, active);
+    const choices = deriveQualityChoices({ currentQuality: getDisplayHarmony().quality,
+        accompanimentQuality: getAccompanimentHarmony().quality,
+        nextQuality: state.mode === "FREE" ? null : getNextStep()?.quality,
+        selectedQuality: selected });
+    const signature = JSON.stringify([choices.normal, choices.advanced]);
+    if (signature !== qualityButtonSignature) {
+        for (const [id, qualities] of [["quality-buttons", choices.normal], ["quality-advanced", choices.advanced]]) {
+            const container = document.getElementById(id);
+            container.innerHTML = "";
+            qualities.forEach(q => {
+                const btn = document.createElement("button");
+                btn.type = "button";
+                btn.textContent = q;
+                btn.dataset.quality = q;
+                btn.dataset.qualityTier = PERMANENT_QUALITIES.includes(q) ? "permanent" :
+                    id === "quality-buttons" ? "contextual" : "advanced";
+                btn.className = "py-1 rounded border text-[10px] font-mono font-bold bg-slate-950 border-slate-800 text-slate-400 hover:text-white transition cursor-pointer";
+                btn.onclick = () => selectInputQuality(q);
+                container.appendChild(btn);
+            });
+        }
+        qualityButtonSignature = signature;
+    }
+    document.getElementById("quality-advanced").hidden = !advancedQualityOpen;
+    updateBassControls();
+    const more = document.getElementById("quality-more");
+    more.textContent = advancedQualityOpen ? "閉じる" : "さらに";
+    more.setAttribute("aria-expanded", String(advancedQualityOpen));
+    for (const id of ["quality-buttons", "quality-advanced"]) {
+        for (const btn of document.getElementById(id).children) {
+            const active = btn.dataset.quality === selected;
+            btn.setAttribute("aria-pressed", String(active));
+            for (const className of ["bg-blue-600", "text-white", "border-blue-400"]) {
+                btn.classList.toggle(className, active);
+            }
         }
     }
 }
 
-function buildQualityButtons() {
-    const container = document.getElementById("quality-buttons");
+// SLASH BASS UI BEGIN
+function updateBassControls() {
+    const controls = document.getElementById("bass-controls");
+    controls.hidden = !advancedQualityOpen;
+    const select = document.getElementById("bass-select");
+    if (!select.children.length) {
+        for (const note of ["", ...NOTE_NAMES]) {
+            const option = document.createElement("option");
+            option.value = note;
+            option.textContent = note || "指定なし";
+            select.appendChild(option);
+        }
+    }
+    select.value = normalizeHarmonyBass(getDisplayHarmony().bass) ?? "";
+    const container = document.getElementById("slash-contextual");
+    const playback = state.mode === "FREE" ? null : getPresetHarmonyPlayback();
+    const signature = playback ? JSON.stringify([playback.currentOccurrence, playback.nextOccurrence, state.key]) : "FREE";
+    if (container.dataset.signature === signature) return;
+    container.dataset.signature = signature;
     container.innerHTML = "";
+    if (!playback) return;
+    for (const [role, occurrence] of [["CURRENT", playback.currentOccurrence], ["NEXT", playback.nextOccurrence]]) {
+        const harmony = getHarmonyFromOccurrence(occurrence);
+        if (!harmony || harmony.bass === undefined || noteIndex(harmony.bass) === noteIndex(harmony.root)) continue;
+        const button = document.createElement("button");
+        button.type = "button";
+        button.dataset.harmonyRole = role;
+        button.textContent = `${role} ${formatHarmonySymbol(harmony)}`;
+        button.onclick = () => {
+            const live = getPresetHarmonyPlayback();
+            const selected = role === "NEXT" ? live.nextOccurrence : live.currentOccurrence;
+            if (selected && selected.occurrenceId === occurrence.occurrenceId) auditionPresetHarmony(selected, role === "NEXT");
+        };
+        container.appendChild(button);
+    }
+}
+// SLASH BASS UI END
 
-    Object.keys(CHORD_TYPES).forEach(q => {
-        const btn = document.createElement("button");
-        btn.textContent = q;
-        btn.className = "py-1 rounded border text-[10px] font-mono font-bold bg-slate-950 border-slate-800 text-slate-400 hover:text-white transition cursor-pointer";
-        btn.onclick = () => selectInputQuality(q);
-        container.appendChild(btn);
-    });
+function buildQualityButtons() {
+    qualityButtonSignature = null;
     updateQualityButtonSelection();
 }
 
@@ -4254,7 +4875,8 @@ function renderProgressionPills() {
             const step = getAccompanimentHarmony();
             state.currentRoot = step.root;
             state.currentQuality = step.quality;
-            audio.playChord(step.root, 3, step.quality);
+            setManualBassChoice(step.root, step.bass);
+            playManualHarmony(step);
             updateUI();
         };
 
@@ -4263,7 +4885,7 @@ function renderProgressionPills() {
         degreeSpan.textContent = `[${i + 1}]`;
 
         const nameSpan = document.createElement("span");
-        nameSpan.textContent = `${chord.root}${chord.quality}`;
+        nameSpan.textContent = formatHarmonySymbol(chord);
 
         pill.appendChild(degreeSpan);
         pill.appendChild(nameSpan);
@@ -4399,11 +5021,11 @@ function updateUI() {
         const accompaniment = getAccompanimentHarmony();
         const next = getNextStep();
 
-        document.getElementById("current-chord").textContent = `${display.root}${display.quality}`;
+        document.getElementById("current-chord").textContent = formatHarmonySymbol(display);
         // Compatibility: T/SD/D is preset metadata, not an inferred manual function.
         document.getElementById("current-function").textContent = state.mode === "FREE" ? "FREE" : accompaniment.function;
 
-        document.getElementById("next-chord").textContent = state.mode === "FREE" || next === null ? "-" : `${next.root}${next.quality}`;
+        document.getElementById("next-chord").textContent = state.mode === "FREE" || next === null ? "-" : formatHarmonySymbol(next);
         document.getElementById("next-function").textContent = state.mode === "FREE" || next === null ? "-" : next.function;
         const loopButton = document.getElementById("loop-button");
         loopButton.textContent = state.playbackPolicy.loopEnabled ? "Loop ON" : "Loop OFF";
