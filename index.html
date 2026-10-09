@@ -94,11 +94,7 @@ body {
     position: relative;
     cursor: pointer;
     transition:
-        transform 0.05s ease,
-        background-color 0.12s ease,
-        box-shadow 0.12s ease,
-        border-color 0.12s ease,
-        opacity 0.12s ease;
+        transform 0.05s ease;
 }
 
 /* Keyboard performance owns pan/zoom gestures; other page areas retain scrolling.
@@ -140,7 +136,7 @@ body {
 .free-chord-quality {
     position: absolute;
     bottom: 24px;
-    font-size: 8px;
+    font-size: 10px;
     font-weight: 500;
     pointer-events: none;
     opacity: 0.8;
@@ -246,13 +242,13 @@ body {
 .next-button {
     position: absolute;
     left: 50%;
-    bottom: -34px;
+    bottom: -36px;
     transform: translateX(-50%);
 
     min-width: 58px;
-    height: 28px;
+    height: 32px;
 
-    border-radius: 7px;
+    border-radius: var(--control-radius);
     border: 1px solid var(--music-future-target);
 
     background: var(--music-future-target);
@@ -262,9 +258,7 @@ body {
     font-weight: 900;
     letter-spacing: 0.5px;
 
-    box-shadow:
-        0 3px 8px rgba(0,0,0,0.45),
-        0 0 12px var(--music-future-target);
+    box-shadow: none;
 
     z-index: 100;
 
@@ -296,7 +290,7 @@ body {
     left: 50%;
     transform: translateX(-50%);
 
-    font-size: 8px;
+    font-size: 10px;
     line-height: 1;
 
     padding: 2px 4px;
@@ -326,238 +320,190 @@ body {
     border-radius: 3px;
 }
 
-@media (min-width: 768px) and (orientation: landscape) {
-    .keyboard-layout {
-        display: grid !important;
-        grid-template-columns: minmax(0, 5fr) minmax(0, 7fr) !important;
-    }
-
-    .lh-section,
-    .rh-section {
-        min-width: 0;
-    }
+/* Layout tokens: shared performance surface; 4 / 8 px spacing scale. */
+:root {
+    --space-unit: 4px;
+    --performance-gap: calc(var(--space-unit) * 4);
+    --control-radius: 4px;
+    --lh-height: clamp(128px, 17vh, 152px);
+    --rh-height: clamp(160px, 22vh, 192px);
 }
 
-@media (min-width: 900px) and (orientation: landscape) {
-    .keyboard-layout {
-        display: grid !important;
-        grid-template-columns: minmax(0, 5fr) minmax(0, 7fr) !important;
-    }
-}
-
-@media (max-width: 767px) {
-    .keyboard-layout {
-        display: grid !important;
-        grid-template-columns: 1fr !important;
-    }
-}
-
-.lh-keyboard-area {
-    padding-bottom: 42px;
-}
-
-@keyframes subtlePulse {
-    0%, 100% {
-        box-shadow: inset 0 0 0 1px var(--music-future-target);
-    }
-    50% {
-        box-shadow: inset 0 0 0 2px var(--music-future-passing);
-    }
-}
-
-.lh-next {
-    animation: subtlePulse 1.8s infinite;
-}
-
-.auto-active {
-    background: var(--state-playing) !important;
-    color: var(--state-playing-text) !important;
-    border-color: var(--state-playing-edge) !important;
-}
-
-.mode-active {
-    background: var(--state-selected-surface) !important;
-    color: var(--state-selected-text) !important;
-    font-weight: 800;
-    border-color: var(--state-selected-edge) !important;
-    text-decoration: underline;
-    text-underline-offset: 3px;
-}
-
-@media (max-width: 480px) {
-    .lh-section,
-    .rh-section {
-        padding: 10px !important;
-    }
-
-    .piano-key {
-        font-size: 8px;
-    }
-
-    .next-button {
-        min-width: 52px;
-    }
-}
-/* SLASH BASS CSS BEGIN */
-#bass-controls { margin-top: 8px; display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--ui-text-secondary); }
-#bass-controls[hidden] { display: none; }
-#bass-select { min-height: 36px; padding: 4px 8px; border: 1px solid var(--ui-divider); border-radius: 6px; background: var(--ui-background); color: var(--ui-text-primary); }
-.slash-contextual { display: flex; flex-wrap: wrap; gap: 4px; }
-.slash-contextual button { min-height: 36px; margin-top: 4px; padding: 4px 8px; border: 1px solid var(--ui-divider); border-radius: 6px; color: var(--ui-text-primary); font-size: 11px; }
-/* SLASH BASS CSS END */
-
-/* QUALITY EXPANSION CSS BEGIN */
-#quality-advanced { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; margin-top: 4px; }
-#quality-advanced[hidden] { display: none; }
-#quality-more, #quality-advanced button { min-height: 36px; }
-#quality-more { margin-top: 4px; padding: 4px 10px; border: 1px solid var(--ui-divider); border-radius: 6px; color: var(--ui-text-secondary); font-size: 11px; }
-/* QUALITY EXPANSION CSS END */
-
-/* R7-3 CSS BEGIN: initial performance layout tuning, no key/marker semantics. */
-:root { --performance-gap: 10px; --lh-height: clamp(120px, 16vh, 140px); --rh-height: clamp(150px, 22vh, 190px); }
-.performance-header { position: sticky; top: 0; z-index: 60; background: var(--ui-background); border-bottom: 1px solid var(--ui-divider); padding: calc(6px + env(safe-area-inset-top)) 12px 6px; }
-.performance-toolbar { max-width: 1280px; margin: auto; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 6px 10px; align-items: center; }
-.performance-title { font-size: 13px; font-weight: 800; white-space: nowrap; }
-.current-preset { min-width: 0; text-align: left; color: var(--ui-text-primary); }
+/* Typography: labels identify roles; chord symbols carry the hierarchy. */
+.performance-title { font-size: 14px; font-weight: 750; letter-spacing: -.035em; white-space: nowrap; }
+.current-preset { min-width: 0; text-align: left; }
 .current-preset span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-#current-preset-name { font-size: 12px; font-weight: 700; }
-#current-preset-description { font-size: 10px; color: var(--ui-text-secondary); }
-.transport-controls { display: flex; gap: 6px; grid-column: 2; grid-row: 2; }
-.mode-controls { display: flex; gap: 2px; grid-column: 1; grid-row: 2; }
-#settings-toggle { grid-column: 3; grid-row: 1 / 3; border: 1px solid var(--ui-divider); border-radius: 8px; padding: 0 10px; font-size: 12px; }
-.performance-header button, .octave-controls button, #quality-buttons button { min-height: 36px; }
-.performance-main { max-width: 1280px; margin: auto; padding: 10px 12px calc(12px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: var(--performance-gap); }
-.performance-strip { padding: 8px 10px !important; }
-.status-layout { display: grid; grid-template-columns: 1fr; gap: 6px; }
-.harmony-pair { display: flex; align-items: center; gap: 8px; }
-.harmony-card { display: flex; align-items: baseline; gap: 7px; min-width: 0; padding: 3px 7px; border-radius: 8px; background: var(--ui-background); border: 1px solid var(--ui-divider); }
-.current-card { border-color: var(--music-current-chord); }.next-card { border-color: var(--ui-divider); }
-#current-chord, #next-chord { font-size: 19px; line-height: 1.25; }
-.progress-area { min-width: 0; }
-.progress-caption { display: flex; justify-content: space-between; margin-bottom: 3px; }
-#progression-pills { gap: 5px; padding: 2px 2px 4px; }
-#progression-pills button { min-height: 32px; padding: 4px 8px; }
-#beat-indicator { margin-top: 2px; min-height: 14px; }
-.keyboard-layout { gap: var(--performance-gap); }
-.lh-section, .rh-section { padding: 10px !important; min-width: 0; }
-.keyboard-heading { display: flex; justify-content: space-between; align-items: center; gap: 6px; margin-bottom: 6px; min-height: 36px; }
-.keyboard-heading h2 { font-size: 12px; white-space: nowrap; }
-.lh-keyboard-area { padding-bottom: 36px; }
-#lh-piano { height: var(--lh-height); }#rh-piano { height: var(--rh-height); }
-.quality-controls { margin-top: 0; }
-#quality-buttons { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; }
-.octave-controls { display: flex; align-items: center; gap: 4px; }.octave-controls button { min-width: 36px; }
-#octave-display { padding: 0 3px; white-space: nowrap; }
-.keyboard-legend { display: flex; flex-wrap: wrap; gap: 4px 8px; padding-top: 7px; font-size: 9px; color: var(--ui-text-secondary); }
-.advanced-controls { scroll-margin-top: calc(100px + env(safe-area-inset-top)); border: 1px solid var(--ui-divider); border-radius: 10px; padding: 8px 10px; color: var(--ui-text-secondary); }
-.advanced-controls summary { min-height: 36px; cursor: pointer; padding: 8px 0; font-size: 12px; }
-.advanced-controls[open] { display: block; }
-.advanced-controls section { margin-top: 10px; }
-.sound-controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 12px; }
-.sound-controls button, .sound-controls select { min-height: 36px; }
-.performance-help { font-size: 10px; line-height: 1.8; padding: 10px; }
-@media (min-width: 768px) and (orientation: landscape) {
-    :root { --lh-height: clamp(176px, 36vh, 300px); --rh-height: clamp(176px, 36vh, 300px); }
-    .performance-toolbar { grid-template-columns: auto minmax(0, 1fr) auto auto auto; }
-    .transport-controls, .mode-controls, #settings-toggle { grid-column: auto; grid-row: auto; }
-    .status-layout { grid-template-columns: auto minmax(0, 1fr); gap: 16px; align-items: center; }
-    .keyboard-heading { margin-bottom: 10px; }
+#current-preset-name { font-size: 13px; font-weight: 650; }
+#current-preset-description { font-size: 11px; color: var(--ui-text-secondary); }
+.harmony-card > :first-child, .progress-caption, .quality-label {
+    font-size: 10px; font-weight: 650; letter-spacing: .12em; line-height: 1.4;
 }
-/* R7-3 CSS END. */
-/* R7-4 CSS BEGIN: overlay and explorer presentation only. */
-.settings-backdrop { position: fixed; inset: 0; z-index: 100; background: rgb(23 25 27 / 38%); opacity: 0; visibility: hidden; transition: opacity 220ms ease, visibility 220ms; }
-.settings-sheet { position: fixed; z-index: 110; bottom: 0; left: 50%; width: min(100%, 860px); max-height: 76vh; max-height: 76dvh; display: flex; flex-direction: column; border: 1px solid var(--ui-divider); border-radius: 18px 18px 0 0; background: var(--ui-surface); box-shadow: 0 -8px 32px #17191B55; transform: translate(-50%, 100%); visibility: hidden; transition: transform 220ms ease, visibility 220ms; }
-.settings-sheet[data-open="true"] { transform: translate(-50%, 0); visibility: visible; transition: transform 220ms ease; }
+.harmony-card > :first-child { grid-column: 1 / -1; color: var(--ui-text-secondary); }
+#current-chord, #next-chord { font-family: inherit; font-variant-numeric: tabular-nums; letter-spacing: -.04em; line-height: 1.16; overflow-wrap: anywhere; }
+#current-chord { font-size: clamp(26px, 3.2vw, 36px); font-weight: 750; color: var(--music-current-chord); }
+#next-chord { font-size: clamp(18px, 2.2vw, 26px); font-weight: 600; color: var(--music-future-target); }
+#current-function, #next-function { font-size: 11px; color: var(--ui-text-secondary); padding-bottom: 3px; }
+.keyboard-heading h2 { font-size: 12px; font-weight: 650; letter-spacing: .12em; color: var(--ui-text-primary); }
+#lh-root-label, #octave-display, #bar-info { font-size: 11px; font-variant-numeric: tabular-nums; color: var(--ui-text-secondary); }
+.quality-label { color: var(--ui-text-secondary); margin-bottom: 8px; }
+.keyboard-legend { font-size: 11px; line-height: 1.6; color: var(--ui-text-secondary); }
+.beat-label { font-size: 11px; }
+
+/* Compact control bar. Group spacing is wider than spacing within controls. */
+.performance-header { position: sticky; top: 0; z-index: 60; background: var(--ui-background); border-bottom: 1px solid var(--ui-divider); padding: calc(8px + env(safe-area-inset-top)) 16px 8px; }
+.performance-toolbar { max-width: 1248px; margin: auto; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 8px 16px; align-items: center; }
+.transport-controls, .mode-controls { display: flex; align-items: center; gap: 4px; }
+.transport-controls { grid-column: 2 / 4; grid-row: 2; justify-content: flex-end; }
+.mode-controls { grid-column: 1; grid-row: 2; }
+.performance-header button { min-height: 40px; border-radius: var(--control-radius); font-size: 12px; }
+#current-preset { padding: 4px 0; }
+#settings-toggle { grid-column: 3; grid-row: 1; padding: 0 8px; color: var(--ui-text-primary); }
+#auto-button { min-width: 80px; font-weight: 700; }
+#loop-button { min-width: 76px; }
+#mode-manual, #mode-free { padding-inline: 10px; }
+
+/* Harmony display and continuous progression timeline. */
+.performance-main { max-width: 1280px; margin: auto; padding: 24px 16px calc(16px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: var(--performance-gap); }
+.performance-strip { padding: 0; }
+.status-layout { display: grid; gap: 16px; }
+.harmony-pair { display: grid; grid-template-columns: minmax(0, 1.25fr) auto minmax(0, 1fr); align-items: center; gap: 16px; }
+.harmony-card { display: grid; grid-template-columns: minmax(0, auto) auto; justify-content: start; align-items: end; gap: 4px 8px; min-width: 0; }
+.harmony-arrow { font-size: 16px; color: var(--ui-text-secondary); }
+.progress-area { min-width: 0; }
+.progress-caption { display: flex; justify-content: space-between; color: var(--ui-text-secondary); margin-bottom: 4px; }
+#progression-pills { gap: 0; padding: 0 0 4px; }
+#progression-pills button { min-height: 40px; padding: 8px 12px; border: 0; border-bottom: 2px solid var(--ui-divider); border-radius: 0; background: transparent; color: var(--ui-text-secondary); box-shadow: none; transform: none; font-size: 12px; }
+#progression-pills .bg-blue-600 { background: transparent; color: var(--music-current-chord); border-color: var(--music-current-chord); font-weight: 750; }
+#beat-indicator { margin-top: 4px; min-height: 16px; }
+
+/* One performance surface with chord context directly beneath the left keys. */
+.keyboard-layout { display: grid; grid-template-columns: 1fr; gap: 24px; padding-top: 16px; border-top: 1px solid var(--ui-divider); }
+.lh-section, .rh-section { min-width: 0; }
+.keyboard-heading { display: flex; justify-content: space-between; align-items: center; gap: 8px; min-height: 40px; margin-bottom: 8px; }
+#lh-root-label { padding: 4px 0; border: 0; background: transparent; }
+.lh-keyboard-area { padding-bottom: 36px; }
+#lh-piano, #rh-piano { width: 100%; padding: 0; border: 0; border-radius: 4px; background: var(--ui-background); box-shadow: none; }
+#lh-piano { height: var(--lh-height); }
+#rh-piano { height: var(--rh-height); }
+#lh-piano .piano-key, #rh-piano .piano-key { border-radius: 0 0 3px 3px; font-size: 11px; box-shadow: none; }
+.piano-key:not(.absolute) { background-color: var(--ui-text-primary); color: var(--ui-background); border-color: var(--ui-background); }
+#lh-piano .piano-key.absolute, #rh-piano .piano-key.absolute { background-color: var(--ui-surface); color: var(--ui-text-primary); border-color: var(--ui-background); font-size: 10px; }
+.octave-controls { display: flex; align-items: center; gap: 4px; }
+.octave-controls button { min-height: 40px; min-width: 40px; border-radius: var(--control-radius); border: 0; }
+#octave-display { padding-inline: 4px; white-space: nowrap; }
+.keyboard-legend { display: flex; flex-wrap: wrap; gap: 4px 16px; padding-top: 16px; }
+.quality-controls { margin-top: 0; }
+#quality-buttons, #quality-advanced { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; }
+#quality-advanced { margin-top: 8px; }
+#quality-advanced[hidden], #bass-controls[hidden] { display: none; }
+#quality-buttons button, #quality-advanced button { min-height: 36px; padding: 4px; font-size: 12px; border-radius: var(--control-radius); }
+#quality-more { min-height: 36px; margin-top: 4px; padding: 4px 8px; border-bottom: 1px solid var(--ui-divider); color: var(--ui-text-secondary); font-size: 12px; }
+#bass-controls { margin-top: 8px; display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--ui-text-secondary); }
+#bass-select { min-height: 40px; padding: 4px 8px; border: 1px solid var(--ui-divider); border-radius: var(--control-radius); background: var(--ui-background); color: var(--ui-text-primary); }
+.slash-contextual { display: flex; flex-wrap: wrap; gap: 4px; }
+.slash-contextual button { min-height: 40px; margin-top: 8px; padding: 4px 8px; border: 1px solid var(--ui-divider); border-radius: var(--control-radius); color: var(--ui-text-primary); font-size: 12px; }
+
+/* Explorer: editorial rows, a single elevated sheet. */
+.settings-backdrop { position: fixed; inset: 0; z-index: 100; background: rgb(23 25 27 / 60%); opacity: 0; visibility: hidden; transition: opacity 160ms ease, visibility 160ms; }
+.settings-sheet { position: fixed; z-index: 110; bottom: 0; left: 50%; width: min(100%, 860px); max-height: 84vh; max-height: 84dvh; display: flex; flex-direction: column; border: 1px solid var(--ui-divider); border-radius: 16px 16px 0 0; background: var(--ui-surface); box-shadow: 0 -8px 32px #17191B55; transform: translate(-50%, 100%); visibility: hidden; transition: transform 160ms ease, visibility 160ms; }
+.settings-sheet[data-open="true"] { transform: translate(-50%, 0); visibility: visible; transition: transform 160ms ease; }
 .settings-backdrop[data-open="true"] { opacity: 1; visibility: visible; }
 .sheet-handle { width: 36px; height: 4px; border-radius: 4px; background: var(--ui-text-secondary); margin: 8px auto 0; flex-shrink: 0; }
-.sheet-header { display: flex; align-items: center; justify-content: space-between; padding: 8px 16px; border-bottom: 1px solid var(--ui-divider); flex-shrink: 0; }
-.sheet-header h2 { font-size: 15px; font-weight: 700; }
-.sheet-header button { min-height: 40px; padding: 6px 12px; border: 1px solid var(--ui-divider); border-radius: 8px; }
-.sheet-scroll { overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y; padding: 12px 16px calc(16px + env(safe-area-inset-bottom)); }
-.sheet-group { margin-bottom: 20px; }
-.sheet-group h3 { font-size: 11px; font-weight: 700; letter-spacing: .08em; color: var(--ui-text-secondary); margin-bottom: 8px; }
-.explorer-list { display: grid; gap: 6px; }
-.explorer-item { text-align: left; border: 1px solid var(--ui-divider); border-radius: 10px; padding: 10px 12px; min-height: 44px; color: var(--ui-text-primary); background: var(--ui-background); }
-.explorer-item[aria-current="true"] { border-color: var(--state-explorer-selected-edge); background: var(--state-explorer-selected-surface); }
-.explorer-item span { display: block; font-size: 11px; color: var(--ui-text-secondary); margin-top: 3px; }
-.explorer-path { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; font-size: 12px; }
-.explorer-path button { min-height: 36px; padding: 4px 8px; border: 1px solid var(--ui-divider); border-radius: 6px; }
-.explorer-navigation { display: flex; align-items: flex-start; gap: 6px; }
+.sheet-header { display: flex; align-items: center; justify-content: space-between; padding: 8px 24px; border-bottom: 1px solid var(--ui-divider); flex-shrink: 0; }
+.sheet-header h2 { font-size: 16px; font-weight: 650; }
+.sheet-header button { min-height: 44px; padding: 8px 12px; border-radius: var(--control-radius); }
+.sheet-scroll { overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y; padding: 16px 24px calc(24px + env(safe-area-inset-bottom)); }
+.sheet-group { margin-bottom: 24px; }
+.sheet-group h3 { font-size: 11px; font-weight: 650; letter-spacing: .12em; color: var(--ui-text-secondary); margin-bottom: 8px; }
+.explorer-list { display: grid; gap: 0; }
+.explorer-item { text-align: left; border: 0; border-bottom: 1px solid var(--ui-divider); border-radius: 0; padding: 12px; min-height: 48px; font-size: 14px; line-height: 1.5; color: var(--ui-text-primary); background: transparent; }
+.explorer-item[aria-current="true"] { border-color: var(--state-explorer-selected-edge); background: var(--state-explorer-selected-surface); box-shadow: inset 3px 0 0 var(--state-selected-edge); }
+.explorer-item span { display: block; font-size: 12px; line-height: 1.6; color: var(--ui-text-secondary); margin-top: 4px; }
+.explorer-item[aria-current="true"] span { color: var(--ui-text-primary); }
+#explorer-current { width: 100%; margin-bottom: 16px; font-weight: 650; }
+.explorer-path { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px; font-size: 12px; }
+.explorer-path button { min-height: 44px; padding: 8px; border: 0; border-radius: var(--control-radius); }
+.explorer-navigation { display: flex; align-items: flex-start; gap: 8px; }
 .explorer-navigation .explorer-path { flex: 1; min-width: 0; }
-#explorer-back { flex-shrink: 0; min-width: 44px; text-align: center; }
-#explorer-back[hidden] { display: none; }
-.catalog-bridge { display: none; }
-.music-controls { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
-.music-controls label { font-size: 11px; color: var(--ui-text-secondary); }
-.music-controls select, .music-controls input { display: block; width: 100%; margin-top: 4px; min-height: 40px; background: var(--ui-background); border: 1px solid var(--ui-divider); border-radius: 8px; padding: 8px; font-size: 12px; }
-@media (max-width: 600px) { .settings-sheet { max-height: 84vh; max-height: 84dvh; } .music-controls { grid-template-columns: 1fr; } }
-@media (prefers-reduced-motion: reduce) { .settings-sheet, .settings-sheet[data-open="true"], .settings-backdrop { transition: none; } }
-/* R7-4 CSS END. */
-/* R7 visual polish: LH width initial tuning; RH keeps full available width. */
-#lh-piano { width: min(100%, 620px); margin-inline: auto; }
+#explorer-back { flex-shrink: 0; min-width: 44px; text-align: center; border: 0; }
+#explorer-back[hidden], .catalog-bridge { display: none; }
+.music-controls { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.music-controls label { font-size: 12px; color: var(--ui-text-secondary); }
+.music-controls select, .music-controls input { display: block; width: 100%; margin-top: 4px; min-height: 44px; background: var(--ui-background); border: 1px solid var(--ui-divider); border-radius: var(--control-radius); padding: 8px; font-size: 13px; }
+.sound-controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 12px; }
+.sound-controls button, .sound-controls select { min-height: 44px; border-radius: var(--control-radius); }
+.performance-help { font-size: 12px; line-height: 1.8; padding: 16px 0; color: var(--ui-text-secondary); }
+.sheet-group > section { border: 0; border-radius: 0; padding: 8px 0; background: transparent; }
+#catalog-status, .sheet-group .text-\[9px\] { font-size: 11px; }
 
-/* Palette adapters for retained Tailwind markup and generated controls.
-   Quality selection is an operation state; active progression is current music. */
+/* Semantic adapters and independent operation states for generated Tailwind controls. */
 .music-current-text { color: var(--music-current-chord); }
 .music-future-text { color: var(--music-future-target); }
 .music-current-chord-fill { background: var(--music-current-chord); }
 .music-current-scale-fill { background: var(--music-current-scale); }
 .music-future-target-fill { background: var(--music-future-target); }
 .music-future-passing-fill { background: var(--music-future-passing); }
-#current-chord { font-size: 21px; color: var(--music-current-chord); }
-#next-chord { color: var(--music-future-target); font-weight: 700; }
-#lh-root-label { background: var(--ui-background); border-color: var(--music-current-chord); }
-#performance-status, .performance-main .lh-section, .performance-main .rh-section { background: var(--ui-surface); border-color: var(--ui-divider); }
 body .bg-slate-950, body .bg-slate-900 { background-color: var(--ui-background); }
 body .bg-slate-800 { background-color: var(--ui-surface); }
 body .border-slate-800, body .border-slate-700 { border-color: var(--ui-divider); }
 body .text-slate-200, body .text-slate-300 { color: var(--ui-text-primary); }
 body .text-slate-400, body .text-slate-500, body .text-slate-600 { color: var(--ui-text-secondary); }
-/* Semantic !important fills still win; neutral notes remain freely playable. */
-.piano-key:not(.absolute) { background-color: var(--ui-text-primary); color: var(--ui-background); border-color: var(--ui-divider); }
-.piano-key.absolute { background-color: var(--ui-surface); color: var(--ui-text-primary); border-color: var(--ui-divider); }
-#progression-pills .bg-blue-600 { background: var(--music-current-chord); color: var(--music-key-text); border-color: var(--music-current-chord); }
-#auto-button:not(.auto-active) { background: var(--state-stopped); color: var(--state-stopped-text); }
-#auto-button:not(.auto-active):hover { background: var(--state-stopped-hover); }
-/* Phase 2: consistent operation states without repainting musical keys. */
 #mode-manual, #mode-free, #quality-buttons button, #quality-advanced button,
 #sound-button, #auto-button, #loop-button {
-    background-color: var(--state-unselected-surface);
-    color: var(--state-unselected-text);
-    border: 1px solid var(--state-unselected-edge);
+    background-color: var(--state-unselected-surface); color: var(--state-unselected-text);
+    border: 1px solid var(--state-unselected-edge); box-shadow: none;
 }
-#quality-buttons [aria-pressed="true"], #quality-advanced [aria-pressed="true"] {
-    background: var(--state-selected-surface);
-    color: var(--state-selected-text);
-    border-color: var(--state-selected-edge);
-    font-weight: 900;
-    text-decoration: underline;
-    text-underline-offset: 3px;
+#quality-buttons button, #quality-advanced button { border-color: transparent; }
+.mode-active, #quality-buttons [aria-pressed="true"], #quality-advanced [aria-pressed="true"] {
+    background: var(--state-selected-surface) !important; color: var(--state-selected-text) !important;
+    border-color: var(--state-selected-edge) !important; font-weight: 800; text-decoration: underline; text-underline-offset: 3px;
 }
-#loop-button[aria-pressed="true"], #sound-button.sound-enabled {
-    background: var(--state-unselected-surface);
-    color: var(--ui-text-primary);
-    border-color: var(--state-selected-edge);
-}
+#loop-button[aria-pressed="true"], #sound-button.sound-enabled { background: var(--state-unselected-surface); color: var(--ui-text-primary); border-color: var(--state-selected-edge); }
 #loop-button[aria-pressed="true"] { text-decoration: underline; text-underline-offset: 3px; }
-#auto-button:not(.auto-active) { color: var(--state-stopped-text); }
+#auto-button:not(.auto-active) { background: var(--state-stopped); color: var(--state-stopped-text); }
+#auto-button:not(.auto-active):hover { background: var(--state-stopped-hover); }
+.auto-active { background: var(--state-playing) !important; color: var(--state-playing-text) !important; border-color: var(--state-playing-edge) !important; }
 #auto-button.auto-active { box-shadow: inset 0 -2px 0 var(--state-playing-edge); }
-body button:not(:disabled):active {
-    background-color: var(--state-pressed-surface) !important;
-    color: var(--ui-text-primary) !important;
-}
-body button:focus-visible, body select:focus-visible, body input:focus-visible {
-    outline: 2px solid var(--state-focus-ring);
-    outline-offset: 2px;
-}
+body button:not(:disabled):active { background-color: var(--state-pressed-surface) !important; color: var(--ui-text-primary) !important; }
+body button:focus-visible, body select:focus-visible, body input:focus-visible { outline: 2px solid var(--state-focus-ring); outline-offset: 2px; }
 body button:disabled { opacity: 0.4; }
-.music-controls select, .music-controls input, #timbre-select {
-    color: var(--ui-text-primary);
-    accent-color: var(--state-focus-ring);
-    color-scheme: dark;
+.music-controls select, .music-controls input, #timbre-select { color: var(--ui-text-primary); accent-color: var(--state-focus-ring); color-scheme: dark; }
+
+/* Responsive: iPad / desktop share aligned 5:7 keyboards; phone stacks roles. */
+@media (min-width: 768px) and (orientation: landscape) {
+    :root { --lh-height: clamp(208px, 36vh, 320px); --rh-height: clamp(208px, 36vh, 320px); }
+    .performance-toolbar { grid-template-columns: auto auto auto minmax(0, 1fr) auto; gap: 24px; }
+    .performance-title { grid-column: 1; grid-row: 1; }
+    .mode-controls { grid-column: 2; grid-row: 1; }
+    .transport-controls { grid-column: 3; grid-row: 1; }
+    .current-preset { grid-column: 4; grid-row: 1; }
+    #settings-toggle { grid-column: 5; grid-row: 1; }
+    .performance-main { padding-top: 24px; }
+    .status-layout { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 32px; align-items: center; }
+    .harmony-pair { gap: 12px; }
+    .keyboard-layout { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 32px; }
 }
-.explorer-item[aria-current="true"] { box-shadow: inset 3px 0 0 var(--state-selected-edge); }
-.explorer-item[aria-current="true"] span { color: var(--ui-text-primary); }
+@media (max-width: 600px) {
+    :root { --performance-gap: 16px; --lh-height: 128px; --rh-height: 160px; }
+    .performance-header { padding-top: calc(4px + env(safe-area-inset-top)); padding-bottom: 4px; }
+    .performance-toolbar { row-gap: 4px; }
+    .performance-main { padding-top: 12px; gap: 12px; }
+    .status-layout { gap: 8px; }
+    #progression-pills button { min-height: 36px; padding-block: 4px; }
+    #beat-indicator { margin-top: 0; }
+    .keyboard-layout { gap: 12px; padding-top: 8px; }
+    .keyboard-heading { min-height: 36px; margin-bottom: 4px; }
+    .quality-label { margin-bottom: 4px; }
+    #rh-piano .piano-key.absolute { font-size: 9px; }
+    .keyboard-legend { gap: 4px 8px; padding-top: 8px; }
+    .sheet-header { padding-inline: 16px; }
+    .sheet-scroll { padding-inline: 16px; }
+    .music-controls { grid-template-columns: 1fr; }
+}
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after { transition: none !important; animation: none !important; }
+    .piano-key:active, .piano-key.active { transform: none; }
+}
 </style>
 </head>
 
@@ -585,7 +531,7 @@ body button:disabled { opacity: 0.4; }
 </header>
 
 <main class="performance-main">
-<section id="performance-status" class="performance-strip border border-slate-800 rounded-2xl p-4">
+<section id="performance-status" class="performance-strip">
     <div class="status-layout">
         <!-- Current & Next Cards -->
         <div class="harmony-pair">
@@ -595,7 +541,7 @@ body button:disabled { opacity: 0.4; }
                 <div id="current-function" class="text-[10px] text-slate-500 font-mono">T</div>
             </div>
 
-            <div class="text-slate-600 text-xl font-bold">→</div>
+            <div class="harmony-arrow" aria-hidden="true">→</div>
 
             <div class="harmony-card next-card">
                 <div class="text-[9px] music-future-text font-bold">NEXT</div>
@@ -615,10 +561,10 @@ body button:disabled { opacity: 0.4; }
         </div>
     </div>
 </section>
-<div class="keyboard-layout grid grid-cols-1">
+<div class="keyboard-layout">
 
 <!-- LEFT HAND PIANO -->
-<section class="lh-section bg-slate-900/80 border border-slate-800 rounded-2xl p-4 shadow-xl">
+<section class="lh-section">
     <div class="keyboard-heading">
         <div>
             <h2 class="text-sm font-bold music-current-text">左手 CHORD</h2>
@@ -633,7 +579,7 @@ body button:disabled { opacity: 0.4; }
 
     <!-- Quality Modifiers -->
     <div class="quality-controls">
-        <div class="text-[9px] text-slate-500 font-bold mb-1">CHORD QUALITY</div>
+        <div class="quality-label">CHORD QUALITY</div>
         <div id="quality-buttons" class="grid grid-cols-5 gap-1"></div>
         <div id="slash-contextual" class="slash-contextual" aria-label="Slash chord"></div>
         <!-- QUALITY EXPANSION HTML BEGIN -->
@@ -647,7 +593,7 @@ body button:disabled { opacity: 0.4; }
 </section>
 
 <!-- RIGHT HAND PIANO -->
-<section class="rh-section bg-slate-900/80 border border-slate-800 rounded-2xl p-4 shadow-xl">
+<section class="rh-section">
     <div class="keyboard-heading">
         <div>
             <h2 class="text-sm font-bold music-current-text">右手 MELODY</h2>
