@@ -30,35 +30,36 @@
     --ui-text-primary: #EAE3D6;
     --ui-text-secondary: #929490;
     --ui-divider: #383A3B;
-    /* Existing controls retain their state colors; never alias music tokens. */
-    --state-playing: #dc2626;
-    --state-playing-text: #ffffff;
-    --state-stopped: #f59e0b;
-    --state-stopped-hover: #fbbf24;
-    --state-stopped-text: #020617;
-    --state-selected: #4f46e5;
-    --state-selected-text: #ffffff;
-    --state-selected-shadow: rgba(79,70,229,0.3);
-    --state-quality-selected: #2563eb;
-    --state-quality-selected-edge: #60a5fa;
-    --state-explorer-selected-edge: #a78bfa;
-    --state-explorer-selected-surface: #4c1d9533;
+    /* Operation states are neutral and independent of musical meaning. */
+    --state-selected-surface: #DDD6C9;
+    --state-selected-text: #17191B;
+    --state-selected-edge: #EAE3D6;
+    --state-unselected-surface: #25282A;
+    --state-unselected-text: #929490;
+    --state-unselected-edge: #383A3B;
+    --state-pressed-surface: #444541;
+    --state-focus-ring: #EAE3D6;
+    --state-playing: #444541;
+    --state-playing-text: #EAE3D6;
+    --state-playing-edge: #EAE3D6;
+    --state-stopped: #25282A;
+    --state-stopped-hover: #444541;
+    --state-stopped-text: #EAE3D6;
+    --state-explorer-selected-edge: #EAE3D6;
+    --state-explorer-selected-surface: #444541;
     --state-pressed-transform: translateY(2px) scale(0.98);
     --state-disabled-opacity: 0.32;
-    --state-beat: #f59e0b;
-    --state-beat-edge: #fbbf24;
-    --state-beat-shadow: rgba(245,158,11,0.65);
-    /* LH connecting chords and FREE choices are NOT Future melody roles.
-       Keep their existing palette pending a separate role/color decision. */
-    --lh-connecting-chord: #818cf8;
-    --lh-connecting-text: #1e1b4b;
-    --lh-connecting-edge: #a5b4fc;
-    --lh-connecting-shadow: rgba(129,140,248,0.45);
-    --lh-free-choice: #e0e7f2;
-    --lh-free-choice-text: #334155;
-    --lh-free-choice-edge: #a5b4cc;
-    --lh-free-choice-black: #334155;
-    --lh-free-choice-black-text: #cbd5e1;
+    --state-beat: #DDD6C9;
+    --state-beat-edge: #EAE3D6;
+    /* LH choices are separate harmony roles, never Future melody colors. */
+    --lh-connecting-chord: #A9ADA5;
+    --lh-connecting-text: #17191B;
+    --lh-connecting-edge: #D7D9D1;
+    --lh-free-choice: #C8C5BB;
+    --lh-free-choice-text: #17191B;
+    --lh-free-choice-edge: #A9ADA5;
+    --lh-free-choice-black: #50514B;
+    --lh-free-choice-black-text: #EAE3D6;
 }
 
 * {
@@ -150,7 +151,7 @@ body {
     background: var(--lh-connecting-chord) !important;
     color: var(--lh-connecting-text) !important;
     border-color: var(--lh-connecting-edge) !important;
-    box-shadow: 0 0 13px var(--lh-connecting-shadow) !important;
+    box-shadow: inset 0 0 0 1px var(--lh-connecting-edge) !important;
     font-weight: 900;
 }
 
@@ -231,7 +232,7 @@ body {
 .beat-dot.beat-active {
     background: var(--state-beat);
     border-color: var(--state-beat-edge);
-    box-shadow: 0 0 9px var(--state-beat-shadow);
+    box-shadow: none;
     transform: scale(1.3);
 }
 
@@ -371,13 +372,16 @@ body {
 .auto-active {
     background: var(--state-playing) !important;
     color: var(--state-playing-text) !important;
+    border-color: var(--state-playing-edge) !important;
 }
 
 .mode-active {
-    background: var(--state-selected) !important;
+    background: var(--state-selected-surface) !important;
     color: var(--state-selected-text) !important;
     font-weight: 800;
-    box-shadow: 0 2px 8px var(--state-selected-shadow);
+    border-color: var(--state-selected-edge) !important;
+    text-decoration: underline;
+    text-underline-offset: 3px;
 }
 
 @media (max-width: 480px) {
@@ -513,9 +517,47 @@ body .text-slate-400, body .text-slate-500, body .text-slate-600 { color: var(--
 .piano-key:not(.absolute) { background-color: var(--ui-text-primary); color: var(--ui-background); border-color: var(--ui-divider); }
 .piano-key.absolute { background-color: var(--ui-surface); color: var(--ui-text-primary); border-color: var(--ui-divider); }
 #progression-pills .bg-blue-600 { background: var(--music-current-chord); color: var(--music-key-text); border-color: var(--music-current-chord); }
-#quality-buttons [aria-pressed="true"], #quality-advanced [aria-pressed="true"] { background: var(--state-quality-selected); color: var(--state-selected-text); border-color: var(--state-quality-selected-edge); }
 #auto-button:not(.auto-active) { background: var(--state-stopped); color: var(--state-stopped-text); }
 #auto-button:not(.auto-active):hover { background: var(--state-stopped-hover); }
+/* Phase 2: consistent operation states without repainting musical keys. */
+#mode-manual, #mode-free, #quality-buttons button, #quality-advanced button,
+#sound-button, #auto-button, #loop-button {
+    background-color: var(--state-unselected-surface);
+    color: var(--state-unselected-text);
+    border: 1px solid var(--state-unselected-edge);
+}
+#quality-buttons [aria-pressed="true"], #quality-advanced [aria-pressed="true"] {
+    background: var(--state-selected-surface);
+    color: var(--state-selected-text);
+    border-color: var(--state-selected-edge);
+    font-weight: 900;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+}
+#loop-button[aria-pressed="true"], #sound-button.sound-enabled {
+    background: var(--state-unselected-surface);
+    color: var(--ui-text-primary);
+    border-color: var(--state-selected-edge);
+}
+#loop-button[aria-pressed="true"] { text-decoration: underline; text-underline-offset: 3px; }
+#auto-button:not(.auto-active) { color: var(--state-stopped-text); }
+#auto-button.auto-active { box-shadow: inset 0 -2px 0 var(--state-playing-edge); }
+body button:not(:disabled):active {
+    background-color: var(--state-pressed-surface) !important;
+    color: var(--ui-text-primary) !important;
+}
+body button:focus-visible, body select:focus-visible, body input:focus-visible {
+    outline: 2px solid var(--state-focus-ring);
+    outline-offset: 2px;
+}
+body button:disabled { opacity: 0.4; }
+.music-controls select, .music-controls input, #timbre-select {
+    color: var(--ui-text-primary);
+    accent-color: var(--state-focus-ring);
+    color-scheme: dark;
+}
+.explorer-item[aria-current="true"] { box-shadow: inset 3px 0 0 var(--state-selected-edge); }
+.explorer-item[aria-current="true"] span { color: var(--ui-text-primary); }
 </style>
 </head>
 
@@ -528,14 +570,14 @@ body .text-slate-400, body .text-slate-500, body .text-slate-600 { color: var(--
             <span id="current-preset-name"></span>
             <span id="current-preset-description"></span>
         </button>
-        <div class="transport-controls"><button id="auto-button" onclick="toggleAutoPlay()" class="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-xs font-bold text-slate-950 transition shadow-sm">
+        <div class="transport-controls"><button id="auto-button" aria-pressed="false" onclick="toggleAutoPlay()" class="px-3 py-1.5 rounded-lg text-xs font-bold text-slate-950 transition shadow-sm">
                 ▶ 再生
             </button><button id="loop-button" type="button" onclick="togglePresetLoop()" aria-pressed="true" class="px-3 py-1.5 rounded-lg bg-slate-800 text-xs font-bold text-slate-200 disabled:opacity-40">
                 Loop ON
             </button></div>
-        <div class="mode-controls" aria-label="演奏モード"><button id="mode-manual" onclick="setMode('MANUAL')" class="px-3 py-1 rounded-md text-slate-400 mode-active">
+        <div class="mode-controls" aria-label="演奏モード"><button id="mode-manual" aria-pressed="true" onclick="setMode('MANUAL')" class="px-3 py-1 rounded-md text-slate-400 mode-active">
                     ガイド
-                </button><button id="mode-free" onclick="setMode('FREE')" class="px-3 py-1 rounded-md text-slate-400">
+                </button><button id="mode-free" aria-pressed="false" onclick="setMode('FREE')" class="px-3 py-1 rounded-md text-slate-400">
                     自由
                 </button></div>
         <button id="settings-toggle" type="button" onclick="openSettingsSheet(this)" aria-controls="settings-sheet" aria-expanded="false">プリセット</button>
@@ -543,7 +585,7 @@ body .text-slate-400, body .text-slate-500, body .text-slate-600 { color: var(--
 </header>
 
 <main class="performance-main">
-<section id="performance-status" class="performance-strip bg-gradient-to-r from-slate-900 via-indigo-950/40 to-slate-900 border border-slate-800 rounded-2xl p-4">
+<section id="performance-status" class="performance-strip border border-slate-800 rounded-2xl p-4">
     <div class="status-layout">
         <!-- Current & Next Cards -->
         <div class="harmony-pair">
@@ -642,13 +684,13 @@ body .text-slate-400, body .text-slate-500, body .text-slate-600 { color: var(--
  <header class="sheet-header"><h2 id="settings-sheet-title">プリセット</h2><button id="settings-close" type="button" onclick="closeSettingsSheet()">閉じる</button></header>
  <div id="advanced-controls" class="sheet-scroll">
   <section id="preset-explorer" class="sheet-group"><h3>PRESET</h3><button id="explorer-current" class="explorer-item" type="button" onclick="showExplorerStage('preset', state.catalogLayer, state.catalogCategory)"></button><div class="explorer-navigation"><button id="explorer-back" class="explorer-item" type="button" onclick="handleExplorerBack()" aria-label="一つ上の階層へ戻る" hidden>←</button><nav id="explorer-path" class="explorer-path" aria-label="プリセットの階層"></nav></div><div id="explorer-list" class="explorer-list"></div><div class="catalog-bridge" aria-hidden="true"><select id="catalog-layer" onchange="changeCatalogLayer()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 outline-none"></select><select id="catalog-category" onchange="changeCatalogCategory()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 outline-none"></select><select id="preset-select" onchange="loadPresetFromUI()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 outline-none"></select></div><div id="catalog-status" class="mt-2 text-[10px] text-slate-400"></div></section>
-  <section class="sheet-group"><h3>MUSIC</h3><div class="music-controls"><label>KEY<select id="key-select" onchange="changeKey()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 outline-none"></select></label><label>Style / Rhythm<select id="rhythm-select" onchange="changeRhythm()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 outline-none"></select></label><label>BPM<input id="bpm-input" type="number" min="40" max="240" value="90" onchange="changeBpm()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-amber-300 font-mono outline-none"></label></div></section>
+  <section class="sheet-group"><h3>MUSIC</h3><div class="music-controls"><label>KEY<select id="key-select" onchange="changeKey()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 outline-none"></select></label><label>Style / Rhythm<select id="rhythm-select" onchange="changeRhythm()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 outline-none"></select></label><label>BPM<input id="bpm-input" type="number" min="40" max="240" value="90" onchange="changeBpm()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs font-mono outline-none"></label></div></section>
   <section class="sheet-group"><h3>SOUND</h3><div class="sound-controls"><label for="timbre-select">音色</label><select id="timbre-select" onchange="changeTimbre()" class="bg-slate-950 border border-slate-800 rounded-lg px-2 py-1.5 text-xs text-slate-200 outline-none">
                 <option value="piano">🎹 ピアノ</option>
                 <option value="ep">⚡ Rhodes EP</option>
                 <option value="synth">🌌 Synth Pad</option>
                 <option value="pluck">🎸 Guitar Pluck</option>
-            </select><button id="sound-button" onclick="audio.userActivate()" class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-xs font-bold text-white transition shadow-sm">
+            </select><button id="sound-button" aria-pressed="false" onclick="audio.userActivate()" class="px-3 py-1.5 rounded-lg text-xs font-bold text-white transition shadow-sm">
                 🔊 音声ON
             </button></div></section>
   <section class="sheet-group"><h3>INFO</h3>    <section class="bg-slate-900/50 border border-slate-800 rounded-xl p-3">
@@ -670,7 +712,7 @@ body .text-slate-400, body .text-slate-500, body .text-slate-600 { color: var(--
             <div id="info-style" class="text-sm font-mono text-slate-200">基本</div>
         </div>
     </div>
-</section><div class="performance-help"><p>左手：アンバー＝現在　薄紫＝つながるコード　グリーン＝NEXT</p><p>右手：アンバー＝コード構成音　淡いアンバー＝スケール内音　淡いグリーン＝つなぎ音　グリーン＝着地点</p></div></section>
+</section><div class="performance-help"><p>左手：アンバー＝現在　シルバーグレー＝つながるコード　グリーン＝NEXT</p><p>右手：アンバー＝コード構成音　淡いアンバー＝スケール内音　淡いグリーン＝つなぎ音　グリーン＝着地点</p></div></section>
  </div>
 </section>
 <!-- R7-4 SHEET END -->
@@ -3279,9 +3321,10 @@ class AudioEngine {
         await this.resume(retryPending);
         const button = document.getElementById("sound-button");
         if (button) {
-            button.textContent = "🔊 音声ON";
-            button.classList.remove("bg-emerald-600");
-            button.classList.add("bg-emerald-500");
+            const enabled = this.ctx?.state === "running";
+            button.textContent = enabled ? "🔊 音声有効" : "🔊 音声ON";
+            button.classList.toggle("sound-enabled", enabled);
+            button.setAttribute("aria-pressed", String(enabled));
         }
     }
 
@@ -4219,6 +4262,8 @@ function setMode(mode) {
 
     document.getElementById("mode-manual").classList.toggle("mode-active", mode === "MANUAL");
     document.getElementById("mode-free").classList.toggle("mode-active", mode === "FREE");
+    document.getElementById("mode-manual").setAttribute("aria-pressed", String(mode === "MANUAL"));
+    document.getElementById("mode-free").setAttribute("aria-pressed", String(mode === "FREE"));
 
     updateUI();
 }
@@ -5249,6 +5294,7 @@ function startAutoPlay() {
     if (autoBtn) {
         autoBtn.textContent = "⏸ 停止";
         autoBtn.classList.add("auto-active");
+        autoBtn.setAttribute("aria-pressed", "true");
     }
 
     resetAutoPlayTimer();
@@ -5274,6 +5320,7 @@ function stopAutoPlay() {
     if (autoBtn) {
         autoBtn.textContent = "▶ 再生";
         autoBtn.classList.remove("auto-active");
+        autoBtn.setAttribute("aria-pressed", "false");
     }
     if (wasPlaying && state.mode !== "FREE") updateUI();
 }
