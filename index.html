@@ -15,6 +15,51 @@
 <script src="https://cdn.tailwindcss.com"></script>
 
 <style>
+/* Analog Instrument Palette: initial device-tuning values.
+   Music roles, neutral UI, and interaction states have separate ownership. */
+:root {
+    --music-current-chord: #E5AD58;
+    --music-current-scale: #D8C8A8;
+    --music-future-target: #8BAC7C;
+    --music-future-passing: #B9CBB2;
+    --music-key-text: #17191B;
+    --music-marker-edge: #25282A;
+    --ui-background: #17191B;
+    --ui-surface: #25282A;
+    --ui-text-primary: #EAE3D6;
+    --ui-text-secondary: #929490;
+    --ui-divider: #383A3B;
+    /* Existing controls retain their state colors; never alias music tokens. */
+    --state-playing: #dc2626;
+    --state-playing-text: #ffffff;
+    --state-stopped: #f59e0b;
+    --state-stopped-hover: #fbbf24;
+    --state-stopped-text: #020617;
+    --state-selected: #4f46e5;
+    --state-selected-text: #ffffff;
+    --state-selected-shadow: rgba(79,70,229,0.3);
+    --state-quality-selected: #2563eb;
+    --state-quality-selected-edge: #60a5fa;
+    --state-explorer-selected-edge: #a78bfa;
+    --state-explorer-selected-surface: #4c1d9533;
+    --state-pressed-transform: translateY(2px) scale(0.98);
+    --state-disabled-opacity: 0.32;
+    --state-beat: #f59e0b;
+    --state-beat-edge: #fbbf24;
+    --state-beat-shadow: rgba(245,158,11,0.65);
+    /* LH connecting chords and FREE choices are NOT Future melody roles.
+       Keep their existing palette pending a separate role/color decision. */
+    --lh-connecting-chord: #818cf8;
+    --lh-connecting-text: #1e1b4b;
+    --lh-connecting-edge: #a5b4fc;
+    --lh-connecting-shadow: rgba(129,140,248,0.45);
+    --lh-free-choice: #e0e7f2;
+    --lh-free-choice-text: #334155;
+    --lh-free-choice-edge: #a5b4cc;
+    --lh-free-choice-black: #334155;
+    --lh-free-choice-black-text: #cbd5e1;
+}
+
 * {
     box-sizing: border-box;
     user-select: none;
@@ -28,8 +73,8 @@ body {
     margin: 0;
     padding: 0;
     min-height: 100%;
-    background: #090d16;
-    color: #f1f5f9;
+    background: var(--ui-background);
+    color: var(--ui-text-primary);
     font-family:
         system-ui,
         -apple-system,
@@ -68,27 +113,27 @@ body {
 /* Press feedback only: semantic/future classes remain intact while held. */
 .piano-key:active,
 .piano-key.active {
-    transform: translateY(2px) scale(0.98);
+    transform: var(--state-pressed-transform);
 }
 
 .lh-current {
-    background: #2563eb !important;
-    color: #ffffff !important;
-    border-color: #60a5fa !important;
-    box-shadow: 0 0 15px rgba(37, 99, 235, 0.55) !important;
+    background: var(--music-current-chord) !important;
+    color: var(--music-key-text) !important;
+    border-color: var(--music-current-chord) !important;
+    box-shadow: inset 0 0 0 1px var(--music-key-text) !important;
     font-weight: 900;
 }
 
 /* FREE CHORD GUIDANCE CSS BEGIN: optional chord choices, distinct from fixed NEXT. */
 .lh-free-candidate {
-    background: #e0e7f2 !important;
-    color: #334155 !important;
-    border-color: #a5b4cc !important;
-    box-shadow: inset 0 0 0 1px #a5b4cc;
+    background: var(--lh-free-choice) !important;
+    color: var(--lh-free-choice-text) !important;
+    border-color: var(--lh-free-choice-edge) !important;
+    box-shadow: inset 0 0 0 1px var(--lh-free-choice-edge);
 }
 .piano-key.absolute.lh-free-candidate {
-    background: #334155 !important;
-    color: #cbd5e1 !important;
+    background: var(--lh-free-choice-black) !important;
+    color: var(--lh-free-choice-black-text) !important;
 }
 .free-chord-quality {
     position: absolute;
@@ -101,38 +146,38 @@ body {
 /* FREE CHORD GUIDANCE CSS END. */
 
 .lh-connect {
-    background: #818cf8 !important;
-    color: #1e1b4b !important;
-    border-color: #a5b4fc !important;
-    box-shadow: 0 0 13px rgba(129,140,248,0.45) !important;
+    background: var(--lh-connecting-chord) !important;
+    color: var(--lh-connecting-text) !important;
+    border-color: var(--lh-connecting-edge) !important;
+    box-shadow: 0 0 13px var(--lh-connecting-shadow) !important;
     font-weight: 900;
 }
 
 .lh-next {
-    background: #7c3aed !important;
-    color: #ffffff !important;
-    border-color: #a78bfa !important;
-    box-shadow: 0 0 18px rgba(124, 58, 237, 0.65) !important;
+    background: var(--music-future-target) !important;
+    color: var(--music-key-text) !important;
+    border-color: var(--music-future-target) !important;
+    box-shadow: inset 0 0 0 1px var(--music-key-text) !important;
     font-weight: 900;
 }
 
 .lh-disabled {
-    opacity: 0.32;
+    opacity: var(--state-disabled-opacity);
 }
 
 .rh-safe {
-    background: #2563eb !important;
-    color: #ffffff !important;
-    border-color: #60a5fa !important;
-    box-shadow: 0 0 9px rgba(37, 99, 235, 0.32) !important;
+    background: var(--music-current-chord) !important;
+    color: var(--music-key-text) !important;
+    border-color: var(--music-current-chord) !important;
+    box-shadow: inset 0 0 0 1px var(--music-key-text) !important;
     font-weight: 800;
 }
 
 .rh-scale {
-    background: #0284c7 !important;
-    color: #f0f9ff !important;
-    border-color: #38bdf8 !important;
-    box-shadow: 0 0 10px rgba(56,189,248,0.35) !important;
+    background: var(--music-current-scale) !important;
+    color: var(--music-key-text) !important;
+    border-color: var(--music-current-scale) !important;
+    box-shadow: inset 0 0 0 1px var(--music-key-text) !important;
     font-weight: 800;
 }
 
@@ -155,19 +200,19 @@ body {
     width: clamp(8px, var(--marker-diameter), 22px);
     aspect-ratio: 1;
     border-radius: 50%;
-    border: 1px solid rgba(255, 255, 255, 0.65);
+    border: 1px solid var(--music-marker-edge);
     pointer-events: none;
     opacity: 1;
 }
 .piano-key:not(.absolute) .future-marker { bottom: 18px; }
-.future-marker.target { background: #8b5cf6; }
-.future-marker.connector { background: #c4b5fd; }
+.future-marker.target { background: var(--music-future-target); }
+.future-marker.connector { background: var(--music-future-passing); }
 .future-marker-halo {
     position: absolute;
     inset: -2px;
     border-radius: 50%;
-    border: var(--halo-border-width, 1.333333px) solid #ddd6fe;
-    box-shadow: 0 0 var(--halo-blur, 4.666667px) #c4b5fd;
+    border: var(--halo-border-width, 1.333333px) solid var(--music-future-passing);
+    box-shadow: 0 0 var(--halo-blur, 4.666667px) var(--music-future-passing);
     transform: scale(var(--halo-scale, 1.28));
     pointer-events: none;
 }
@@ -177,21 +222,21 @@ body {
     width: 8px;
     height: 8px;
     border-radius: 999px;
-    background: #334155;
-    border: 1px solid #475569;
+    background: var(--ui-divider);
+    border: 1px solid var(--ui-divider);
     transition: transform 0.08s ease, background 0.08s ease, box-shadow 0.08s ease;
 }
 
 .beat-dot.beat-active {
-    background: #f59e0b;
-    border-color: #fbbf24;
-    box-shadow: 0 0 9px rgba(245,158,11,0.65);
+    background: var(--state-beat);
+    border-color: var(--state-beat-edge);
+    box-shadow: 0 0 9px var(--state-beat-shadow);
     transform: scale(1.3);
 }
 
 .beat-label {
     margin-left: 6px;
-    color: #94a3b8;
+    color: var(--ui-text-secondary);
     font-family: monospace;
     font-size: 9px;
 }
@@ -206,10 +251,10 @@ body {
     height: 28px;
 
     border-radius: 7px;
-    border: 1px solid #a78bfa;
+    border: 1px solid var(--music-future-target);
 
-    background: #7c3aed;
-    color: white;
+    background: var(--music-future-target);
+    color: var(--music-key-text);
 
     font-size: 9px;
     font-weight: 900;
@@ -217,7 +262,7 @@ body {
 
     box-shadow:
         0 3px 8px rgba(0,0,0,0.45),
-        0 0 12px rgba(124,58,237,0.5);
+        0 0 12px var(--music-future-target);
 
     z-index: 100;
 
@@ -228,7 +273,7 @@ body {
 
 .next-button:active {
     transform: translateX(-50%) translateY(2px) scale(0.96);
-    background: #6d28d9;
+    background: var(--music-future-target);
 }
 
 .next-button::before {
@@ -240,7 +285,7 @@ body {
 
     border-left: 5px solid transparent;
     border-right: 5px solid transparent;
-    border-bottom: 6px solid #7c3aed;
+    border-bottom: 6px solid var(--music-future-target);
 }
 
 .note-role-label {
@@ -271,11 +316,11 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-    background: #0f172a;
+    background: var(--ui-surface);
 }
 
 ::-webkit-scrollbar-thumb {
-    background: #334155;
+    background: var(--ui-divider);
     border-radius: 3px;
 }
 
@@ -311,10 +356,10 @@ body {
 
 @keyframes subtlePulse {
     0%, 100% {
-        box-shadow: 0 0 9px rgba(124,58,237,0.4);
+        box-shadow: inset 0 0 0 1px var(--music-future-target);
     }
     50% {
-        box-shadow: 0 0 18px rgba(124,58,237,0.75);
+        box-shadow: inset 0 0 0 2px var(--music-future-passing);
     }
 }
 
@@ -323,15 +368,15 @@ body {
 }
 
 .auto-active {
-    background: #dc2626 !important;
-    color: white !important;
+    background: var(--state-playing) !important;
+    color: var(--state-playing-text) !important;
 }
 
 .mode-active {
-    background: #4f46e5 !important;
-    color: white !important;
+    background: var(--state-selected) !important;
+    color: var(--state-selected-text) !important;
     font-weight: 800;
-    box-shadow: 0 2px 8px rgba(79,70,229,0.3);
+    box-shadow: 0 2px 8px var(--state-selected-shadow);
 }
 
 @media (max-width: 480px) {
@@ -349,39 +394,39 @@ body {
     }
 }
 /* SLASH BASS CSS BEGIN */
-#bass-controls { margin-top: 8px; display: flex; align-items: center; gap: 8px; font-size: 11px; color: #94a3b8; }
+#bass-controls { margin-top: 8px; display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--ui-text-secondary); }
 #bass-controls[hidden] { display: none; }
-#bass-select { min-height: 36px; padding: 4px 8px; border: 1px solid #334155; border-radius: 6px; background: #020617; color: #e2e8f0; }
+#bass-select { min-height: 36px; padding: 4px 8px; border: 1px solid var(--ui-divider); border-radius: 6px; background: var(--ui-background); color: var(--ui-text-primary); }
 .slash-contextual { display: flex; flex-wrap: wrap; gap: 4px; }
-.slash-contextual button { min-height: 36px; margin-top: 4px; padding: 4px 8px; border: 1px solid #475569; border-radius: 6px; color: #cbd5e1; font-size: 11px; }
+.slash-contextual button { min-height: 36px; margin-top: 4px; padding: 4px 8px; border: 1px solid var(--ui-divider); border-radius: 6px; color: var(--ui-text-primary); font-size: 11px; }
 /* SLASH BASS CSS END */
 
 /* QUALITY EXPANSION CSS BEGIN */
 #quality-advanced { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; margin-top: 4px; }
 #quality-advanced[hidden] { display: none; }
 #quality-more, #quality-advanced button { min-height: 36px; }
-#quality-more { margin-top: 4px; padding: 4px 10px; border: 1px solid #334155; border-radius: 6px; color: #94a3b8; font-size: 11px; }
+#quality-more { margin-top: 4px; padding: 4px 10px; border: 1px solid var(--ui-divider); border-radius: 6px; color: var(--ui-text-secondary); font-size: 11px; }
 /* QUALITY EXPANSION CSS END */
 
 /* R7-3 CSS BEGIN: initial performance layout tuning, no key/marker semantics. */
 :root { --performance-gap: 10px; --lh-height: clamp(120px, 16vh, 140px); --rh-height: clamp(150px, 22vh, 190px); }
-.performance-header { position: sticky; top: 0; z-index: 60; background: #0f172af5; border-bottom: 1px solid #1e293b; padding: calc(6px + env(safe-area-inset-top)) 12px 6px; }
+.performance-header { position: sticky; top: 0; z-index: 60; background: var(--ui-background); border-bottom: 1px solid var(--ui-divider); padding: calc(6px + env(safe-area-inset-top)) 12px 6px; }
 .performance-toolbar { max-width: 1280px; margin: auto; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 6px 10px; align-items: center; }
 .performance-title { font-size: 13px; font-weight: 800; white-space: nowrap; }
-.current-preset { min-width: 0; text-align: left; color: #e2e8f0; }
+.current-preset { min-width: 0; text-align: left; color: var(--ui-text-primary); }
 .current-preset span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 #current-preset-name { font-size: 12px; font-weight: 700; }
-#current-preset-description { font-size: 10px; color: #94a3b8; }
+#current-preset-description { font-size: 10px; color: var(--ui-text-secondary); }
 .transport-controls { display: flex; gap: 6px; grid-column: 2; grid-row: 2; }
 .mode-controls { display: flex; gap: 2px; grid-column: 1; grid-row: 2; }
-#settings-toggle { grid-column: 3; grid-row: 1 / 3; border: 1px solid #334155; border-radius: 8px; padding: 0 10px; font-size: 12px; }
+#settings-toggle { grid-column: 3; grid-row: 1 / 3; border: 1px solid var(--ui-divider); border-radius: 8px; padding: 0 10px; font-size: 12px; }
 .performance-header button, .octave-controls button, #quality-buttons button { min-height: 36px; }
 .performance-main { max-width: 1280px; margin: auto; padding: 10px 12px calc(12px + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: var(--performance-gap); }
 .performance-strip { padding: 8px 10px !important; }
 .status-layout { display: grid; grid-template-columns: 1fr; gap: 6px; }
 .harmony-pair { display: flex; align-items: center; gap: 8px; }
-.harmony-card { display: flex; align-items: baseline; gap: 7px; min-width: 0; padding: 3px 7px; border-radius: 8px; background: #020617; border: 1px solid #334155; }
-.current-card { border-color: #3b82f666; }.next-card { border-color: #a855f766; }
+.harmony-card { display: flex; align-items: baseline; gap: 7px; min-width: 0; padding: 3px 7px; border-radius: 8px; background: var(--ui-background); border: 1px solid var(--ui-divider); }
+.current-card { border-color: var(--music-current-chord); }.next-card { border-color: var(--ui-divider); }
 #current-chord, #next-chord { font-size: 19px; line-height: 1.25; }
 .progress-area { min-width: 0; }
 .progress-caption { display: flex; justify-content: space-between; margin-bottom: 3px; }
@@ -398,8 +443,8 @@ body {
 #quality-buttons { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; }
 .octave-controls { display: flex; align-items: center; gap: 4px; }.octave-controls button { min-width: 36px; }
 #octave-display { padding: 0 3px; white-space: nowrap; }
-.keyboard-legend { display: flex; flex-wrap: wrap; gap: 4px 8px; padding-top: 7px; font-size: 9px; color: #94a3b8; }
-.advanced-controls { scroll-margin-top: calc(100px + env(safe-area-inset-top)); border: 1px solid #334155; border-radius: 10px; padding: 8px 10px; color: #94a3b8; }
+.keyboard-legend { display: flex; flex-wrap: wrap; gap: 4px 8px; padding-top: 7px; font-size: 9px; color: var(--ui-text-secondary); }
+.advanced-controls { scroll-margin-top: calc(100px + env(safe-area-inset-top)); border: 1px solid var(--ui-divider); border-radius: 10px; padding: 8px 10px; color: var(--ui-text-secondary); }
 .advanced-controls summary { min-height: 36px; cursor: pointer; padding: 8px 0; font-size: 12px; }
 .advanced-controls[open] { display: block; }
 .advanced-controls section { margin-top: 10px; }
@@ -415,36 +460,61 @@ body {
 }
 /* R7-3 CSS END. */
 /* R7-4 CSS BEGIN: overlay and explorer presentation only. */
-.settings-backdrop { position: fixed; inset: 0; z-index: 100; background: rgb(2 6 23 / 38%); opacity: 0; visibility: hidden; transition: opacity 220ms ease, visibility 220ms; }
-.settings-sheet { position: fixed; z-index: 110; bottom: 0; left: 50%; width: min(100%, 860px); max-height: 76vh; max-height: 76dvh; display: flex; flex-direction: column; border: 1px solid #475569; border-radius: 18px 18px 0 0; background: #0f172a; box-shadow: 0 -8px 32px #02061755; transform: translate(-50%, 100%); visibility: hidden; transition: transform 220ms ease, visibility 220ms; }
+.settings-backdrop { position: fixed; inset: 0; z-index: 100; background: rgb(23 25 27 / 38%); opacity: 0; visibility: hidden; transition: opacity 220ms ease, visibility 220ms; }
+.settings-sheet { position: fixed; z-index: 110; bottom: 0; left: 50%; width: min(100%, 860px); max-height: 76vh; max-height: 76dvh; display: flex; flex-direction: column; border: 1px solid var(--ui-divider); border-radius: 18px 18px 0 0; background: var(--ui-surface); box-shadow: 0 -8px 32px #17191B55; transform: translate(-50%, 100%); visibility: hidden; transition: transform 220ms ease, visibility 220ms; }
 .settings-sheet[data-open="true"] { transform: translate(-50%, 0); visibility: visible; transition: transform 220ms ease; }
 .settings-backdrop[data-open="true"] { opacity: 1; visibility: visible; }
-.sheet-handle { width: 36px; height: 4px; border-radius: 4px; background: #64748b; margin: 8px auto 0; flex-shrink: 0; }
-.sheet-header { display: flex; align-items: center; justify-content: space-between; padding: 8px 16px; border-bottom: 1px solid #334155; flex-shrink: 0; }
+.sheet-handle { width: 36px; height: 4px; border-radius: 4px; background: var(--ui-text-secondary); margin: 8px auto 0; flex-shrink: 0; }
+.sheet-header { display: flex; align-items: center; justify-content: space-between; padding: 8px 16px; border-bottom: 1px solid var(--ui-divider); flex-shrink: 0; }
 .sheet-header h2 { font-size: 15px; font-weight: 700; }
-.sheet-header button { min-height: 40px; padding: 6px 12px; border: 1px solid #475569; border-radius: 8px; }
+.sheet-header button { min-height: 40px; padding: 6px 12px; border: 1px solid var(--ui-divider); border-radius: 8px; }
 .sheet-scroll { overflow-y: auto; overscroll-behavior: contain; touch-action: pan-y; padding: 12px 16px calc(16px + env(safe-area-inset-bottom)); }
 .sheet-group { margin-bottom: 20px; }
-.sheet-group h3 { font-size: 11px; font-weight: 700; letter-spacing: .08em; color: #94a3b8; margin-bottom: 8px; }
+.sheet-group h3 { font-size: 11px; font-weight: 700; letter-spacing: .08em; color: var(--ui-text-secondary); margin-bottom: 8px; }
 .explorer-list { display: grid; gap: 6px; }
-.explorer-item { text-align: left; border: 1px solid #334155; border-radius: 10px; padding: 10px 12px; min-height: 44px; color: #e2e8f0; background: #020617; }
-.explorer-item[aria-current="true"] { border-color: #a78bfa; background: #4c1d9533; }
-.explorer-item span { display: block; font-size: 11px; color: #94a3b8; margin-top: 3px; }
+.explorer-item { text-align: left; border: 1px solid var(--ui-divider); border-radius: 10px; padding: 10px 12px; min-height: 44px; color: var(--ui-text-primary); background: var(--ui-background); }
+.explorer-item[aria-current="true"] { border-color: var(--state-explorer-selected-edge); background: var(--state-explorer-selected-surface); }
+.explorer-item span { display: block; font-size: 11px; color: var(--ui-text-secondary); margin-top: 3px; }
 .explorer-path { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; font-size: 12px; }
-.explorer-path button { min-height: 36px; padding: 4px 8px; border: 1px solid #475569; border-radius: 6px; }
+.explorer-path button { min-height: 36px; padding: 4px 8px; border: 1px solid var(--ui-divider); border-radius: 6px; }
 .explorer-navigation { display: flex; align-items: flex-start; gap: 6px; }
 .explorer-navigation .explorer-path { flex: 1; min-width: 0; }
 #explorer-back { flex-shrink: 0; min-width: 44px; text-align: center; }
 #explorer-back[hidden] { display: none; }
 .catalog-bridge { display: none; }
 .music-controls { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
-.music-controls label { font-size: 11px; color: #94a3b8; }
-.music-controls select, .music-controls input { display: block; width: 100%; margin-top: 4px; min-height: 40px; background: #020617; border: 1px solid #334155; border-radius: 8px; padding: 8px; font-size: 12px; }
+.music-controls label { font-size: 11px; color: var(--ui-text-secondary); }
+.music-controls select, .music-controls input { display: block; width: 100%; margin-top: 4px; min-height: 40px; background: var(--ui-background); border: 1px solid var(--ui-divider); border-radius: 8px; padding: 8px; font-size: 12px; }
 @media (max-width: 600px) { .settings-sheet { max-height: 84vh; max-height: 84dvh; } .music-controls { grid-template-columns: 1fr; } }
 @media (prefers-reduced-motion: reduce) { .settings-sheet, .settings-sheet[data-open="true"], .settings-backdrop { transition: none; } }
 /* R7-4 CSS END. */
 /* R7 visual polish: LH width initial tuning; RH keeps full available width. */
 #lh-piano { width: min(100%, 620px); margin-inline: auto; }
+
+/* Palette adapters for retained Tailwind markup and generated controls.
+   Quality selection is an operation state; active progression is current music. */
+.music-current-text { color: var(--music-current-chord); }
+.music-future-text { color: var(--music-future-target); }
+.music-current-chord-fill { background: var(--music-current-chord); }
+.music-current-scale-fill { background: var(--music-current-scale); }
+.music-future-target-fill { background: var(--music-future-target); }
+.music-future-passing-fill { background: var(--music-future-passing); }
+#current-chord { font-size: 21px; color: var(--music-current-chord); }
+#next-chord { color: var(--music-future-target); font-weight: 700; }
+#lh-root-label { background: var(--ui-background); border-color: var(--music-current-chord); }
+#performance-status, .performance-main .lh-section, .performance-main .rh-section { background: var(--ui-surface); border-color: var(--ui-divider); }
+body .bg-slate-950, body .bg-slate-900 { background-color: var(--ui-background); }
+body .bg-slate-800 { background-color: var(--ui-surface); }
+body .border-slate-800, body .border-slate-700 { border-color: var(--ui-divider); }
+body .text-slate-200, body .text-slate-300 { color: var(--ui-text-primary); }
+body .text-slate-400, body .text-slate-500, body .text-slate-600 { color: var(--ui-text-secondary); }
+/* Semantic !important fills still win; neutral notes remain freely playable. */
+.piano-key:not(.absolute) { background-color: var(--ui-text-primary); color: var(--ui-background); border-color: var(--ui-divider); }
+.piano-key.absolute { background-color: var(--ui-surface); color: var(--ui-text-primary); border-color: var(--ui-divider); }
+#progression-pills .bg-blue-600 { background: var(--music-current-chord); color: var(--music-key-text); border-color: var(--music-current-chord); }
+#quality-buttons [aria-pressed="true"], #quality-advanced [aria-pressed="true"] { background: var(--state-quality-selected); color: var(--state-selected-text); border-color: var(--state-quality-selected-edge); }
+#auto-button:not(.auto-active) { background: var(--state-stopped); color: var(--state-stopped-text); }
+#auto-button:not(.auto-active):hover { background: var(--state-stopped-hover); }
 </style>
 </head>
 
@@ -477,16 +547,16 @@ body {
         <!-- Current & Next Cards -->
         <div class="harmony-pair">
             <div class="harmony-card current-card">
-                <div class="text-[9px] text-blue-400 font-bold">CURRENT</div>
-                <div id="current-chord" class="text-3xl font-black text-blue-300 font-mono">C</div>
+                <div class="text-[9px] music-current-text font-bold">CURRENT</div>
+                <div id="current-chord" class="text-3xl font-black music-current-text font-mono">C</div>
                 <div id="current-function" class="text-[10px] text-slate-500 font-mono">T</div>
             </div>
 
             <div class="text-slate-600 text-xl font-bold">→</div>
 
             <div class="harmony-card next-card">
-                <div class="text-[9px] text-purple-300 font-bold">NEXT</div>
-                <div id="next-chord" class="text-2xl font-black text-purple-300 font-mono">G</div>
+                <div class="text-[9px] music-future-text font-bold">NEXT</div>
+                <div id="next-chord" class="text-2xl font-black music-future-text font-mono">G</div>
                 <div id="next-function" class="text-[10px] text-slate-500 font-mono">D</div>
             </div>
         </div>
@@ -495,7 +565,7 @@ body {
         <div class="progress-area">
             <div class="progress-caption">
                 <span class="text-[10px] text-slate-400 font-mono">PROGRESS</span>
-                <span id="bar-info" class="text-[10px] text-purple-300 font-mono">1 / 4</span>
+                <span id="bar-info" class="text-[10px] music-future-text font-mono">1 / 4</span>
             </div>
             <div id="progression-pills" class="flex gap-1.5 overflow-x-auto pb-1"></div>
             <div id="beat-indicator" class="mt-2 flex items-center gap-1" aria-label="現在の拍"></div>
@@ -508,9 +578,9 @@ body {
 <section class="lh-section bg-slate-900/80 border border-slate-800 rounded-2xl p-4 shadow-xl">
     <div class="keyboard-heading">
         <div>
-            <h2 class="text-sm font-bold text-blue-400">左手 CHORD</h2>
+            <h2 class="text-sm font-bold music-current-text">左手 CHORD</h2>
         </div>
-        <span id="lh-root-label" class="px-2 py-1 rounded bg-blue-500/20 text-blue-300 border border-blue-500/30 text-xs font-mono font-bold">C3</span>
+        <span id="lh-root-label" class="px-2 py-1 rounded  music-current-text border  text-xs font-mono font-bold">C3</span>
     </div>
 
     <!-- LH Keyboard -->
@@ -537,7 +607,7 @@ body {
 <section class="rh-section bg-slate-900/80 border border-slate-800 rounded-2xl p-4 shadow-xl">
     <div class="keyboard-heading">
         <div>
-            <h2 class="text-sm font-bold text-blue-400">右手 MELODY</h2>
+            <h2 class="text-sm font-bold music-current-text">右手 MELODY</h2>
         </div>
         <div id="octave-controls" class="octave-controls">
             <button id="octave-down" aria-label="右鍵盤を1オクターブ下げる" onclick="shiftRhOctave(-1)" class="px-2 py-1 bg-slate-950 border border-slate-800 rounded text-xs hover:bg-slate-800 transition">−</button>
@@ -551,10 +621,10 @@ body {
 
     <!-- Legend -->
     <div class="keyboard-legend">
-        <span class="flex items-center gap-1"><i class="w-2.5 h-2.5 rounded-full bg-blue-500 inline-block"></i> コード構成音</span>
-        <span class="flex items-center gap-1"><i class="w-2.5 h-2.5 rounded-full bg-sky-500 inline-block"></i> スケール内音</span>
-        <span class="flex items-center gap-1"><i class="w-2.5 h-2.5 rounded-full bg-indigo-400 inline-block"></i> つなぎ音</span>
-        <span class="flex items-center gap-1"><i class="w-2.5 h-2.5 rounded-full bg-violet-600 inline-block"></i> 着地点</span>
+        <span class="flex items-center gap-1"><i class="w-2.5 h-2.5 rounded-full music-current-chord-fill inline-block"></i> コード構成音</span>
+        <span class="flex items-center gap-1"><i class="w-2.5 h-2.5 rounded-full music-current-scale-fill inline-block"></i> スケール内音</span>
+        <span class="flex items-center gap-1"><i class="w-2.5 h-2.5 rounded-full music-future-passing-fill inline-block"></i> つなぎ音</span>
+        <span class="flex items-center gap-1"><i class="w-2.5 h-2.5 rounded-full music-future-target-fill inline-block"></i> 着地点</span>
     </div>
 </section>
 
@@ -570,7 +640,7 @@ body {
  <div class="sheet-handle" aria-hidden="true"></div>
  <header class="sheet-header"><h2 id="settings-sheet-title">プリセット</h2><button id="settings-close" type="button" onclick="closeSettingsSheet()">閉じる</button></header>
  <div id="advanced-controls" class="sheet-scroll">
-  <section id="preset-explorer" class="sheet-group"><h3>PRESET</h3><button id="explorer-current" class="explorer-item" type="button" onclick="showExplorerStage('preset', state.catalogLayer, state.catalogCategory)"></button><div class="explorer-navigation"><button id="explorer-back" class="explorer-item" type="button" onclick="handleExplorerBack()" aria-label="一つ上の階層へ戻る" hidden>←</button><nav id="explorer-path" class="explorer-path" aria-label="プリセットの階層"></nav></div><div id="explorer-list" class="explorer-list"></div><div class="catalog-bridge" aria-hidden="true"><select id="catalog-layer" onchange="changeCatalogLayer()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 outline-none"></select><select id="catalog-category" onchange="changeCatalogCategory()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 outline-none"></select><select id="preset-select" onchange="loadPresetFromUI()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 outline-none"></select></div><div id="catalog-status" class="mt-2 text-[10px] text-purple-400"></div></section>
+  <section id="preset-explorer" class="sheet-group"><h3>PRESET</h3><button id="explorer-current" class="explorer-item" type="button" onclick="showExplorerStage('preset', state.catalogLayer, state.catalogCategory)"></button><div class="explorer-navigation"><button id="explorer-back" class="explorer-item" type="button" onclick="handleExplorerBack()" aria-label="一つ上の階層へ戻る" hidden>←</button><nav id="explorer-path" class="explorer-path" aria-label="プリセットの階層"></nav></div><div id="explorer-list" class="explorer-list"></div><div class="catalog-bridge" aria-hidden="true"><select id="catalog-layer" onchange="changeCatalogLayer()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 outline-none"></select><select id="catalog-category" onchange="changeCatalogCategory()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 outline-none"></select><select id="preset-select" onchange="loadPresetFromUI()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 outline-none"></select></div><div id="catalog-status" class="mt-2 text-[10px] text-slate-400"></div></section>
   <section class="sheet-group"><h3>MUSIC</h3><div class="music-controls"><label>KEY<select id="key-select" onchange="changeKey()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 outline-none"></select></label><label>Style / Rhythm<select id="rhythm-select" onchange="changeRhythm()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-slate-200 outline-none"></select></label><label>BPM<input id="bpm-input" type="number" min="40" max="240" value="90" onchange="changeBpm()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-xs text-amber-300 font-mono outline-none"></label></div></section>
   <section class="sheet-group"><h3>SOUND</h3><div class="sound-controls"><label for="timbre-select">音色</label><select id="timbre-select" onchange="changeTimbre()" class="bg-slate-950 border border-slate-800 rounded-lg px-2 py-1.5 text-xs text-slate-200 outline-none">
                 <option value="piano">🎹 ピアノ</option>
@@ -599,7 +669,7 @@ body {
             <div id="info-style" class="text-sm font-mono text-slate-200">基本</div>
         </div>
     </div>
-</section><div class="performance-help"><p>左手：青＝現在　薄紫＝つながるコード　紫＝NEXT</p><p>右手：青＝構成音　水色＝スケール　薄紫＝つなぎ　紫＝着地点</p></div></section>
+</section><div class="performance-help"><p>左手：アンバー＝現在　薄紫＝つながるコード　グリーン＝NEXT</p><p>右手：アンバー＝コード構成音　淡いアンバー＝スケール内音　淡いグリーン＝つなぎ音　グリーン＝着地点</p></div></section>
  </div>
 </section>
 <!-- R7-4 SHEET END -->
