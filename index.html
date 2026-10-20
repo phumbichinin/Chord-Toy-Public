@@ -504,6 +504,19 @@ body button:disabled { opacity: 0.4; }
     *, *::before, *::after { transition: none !important; animation: none !important; }
     .piano-key:active, .piano-key.active { transform: none; }
 }
+/* Audio library controls stay secondary, within the existing settings sheet. */
+.studio-controls { font-size: 12px; }
+.studio-controls p { margin: 8px 0; color: var(--ui-text-secondary); line-height: 1.6; }
+.studio-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; }
+.studio-controls button, .studio-controls select, .studio-controls summary { min-height: 44px; padding: 10px; color: var(--ui-text-primary); background: var(--ui-surface); border: 1px solid var(--ui-divider); border-radius: 6px; }
+.studio-controls select { color-scheme: dark; }
+.studio-controls button:disabled, .studio-controls select:disabled { opacity: .5; }
+.studio-controls progress { width: 100%; accent-color: var(--ui-text-primary); }
+.studio-controls a { text-decoration: underline; }
+#piano-quality-controls { margin: 12px 0; }
+#piano-quality-controls > label, #piano-quality-controls > select { display: block; width: 100%; margin: 8px 0; }
+#piano-quality-controls .piano-match { display: flex; align-items: center; gap: 10px; min-height: 44px; }
+#piano-quality-controls input { accent-color: var(--ui-text-primary); }
 </style>
 </head>
 
@@ -639,6 +652,28 @@ body button:disabled { opacity: 0.4; }
             </select><button id="sound-button" aria-pressed="false" onclick="audio.userActivate()" class="px-3 py-1.5 rounded-lg text-xs font-bold text-white transition shadow-sm">
                 🔊 音声ON
             </button></div></section>
+  <section class="sheet-group studio-controls"><h3>STUDIO BASIC</h3>
+   <label for="sound-set">音源セット</label>
+   <select id="sound-set" onchange="studioLibrary.select(this.value)"><option value="standard">STANDARD</option><option id="studio-option" value="studio" disabled>STUDIO BASIC</option></select>
+   <p>Grand Piano / Acoustic Bass / Acoustic Drums</p>
+   <div class="studio-actions"><button id="studio-install" type="button" onclick="studioLibrary.install()">インストール（約110 MB）</button><button id="studio-delete" type="button" onclick="studioLibrary.remove()">音源を削除</button></div>
+   <progress id="studio-progress" aria-label="音源インストール進捗" hidden></progress>
+   <p id="studio-status" role="status" aria-live="polite">STANDARD：追加ダウンロード不要</p>
+   <p>保存は端末・ブラウザごとです。消去された場合は再インストールできます。STUDIOでは音色が固定されます。</p>
+   <details id="piano-quality-controls"><summary>ピアノ比較・Release</summary>
+    <label for="piano-profile">演奏するピアノ</label><select id="piano-profile" onchange="changePianoProfile()"><option value="improved">改善版：C2〜C6を高密度化</option><option value="baseline">旧版：6半音・2層・0.45秒</option></select>
+    <label for="piano-release-melody">右手 Melody Release</label><select id="piano-release-melody" onchange="changePianoRelease('melody')"><option value="0.45" selected>0.45秒（標準）</option><option value="1.2">1.2秒</option><option value="2">2.0秒</option><option value="3">3.0秒</option></select>
+    <label for="piano-release-chord">左手 Chord Release</label><select id="piano-release-chord" onchange="changePianoRelease('chord')"><option value="0.45">0.45秒</option><option value="1.2" selected>1.2秒（標準）</option><option value="2">2.0秒</option><option value="3">3.0秒</option></select>
+    <p>新しく押した手動のSTUDIOピアノに適用。自動伴奏・STANDARDは変わりません。</p>
+    <label for="piano-comparison-part">比較するパート（単音）</label><select id="piano-comparison-part"><option value="melody">右手 Melody</option><option value="chord">左手 Chord</option></select>
+    <label for="piano-comparison-note">比較音</label><select id="piano-comparison-note"><option value="36">C2</option><option value="48" selected>C3</option><option value="60">C4</option><option value="64">E4</option><option value="67">G4</option><option value="72">C5</option><option value="76">E5</option><option value="79">G5</option><option value="84">C6</option></select>
+    <label for="piano-comparison-velocity">Velocity（全比較共通）</label><select id="piano-comparison-velocity"><option value="0.1">弱：0.10</option><option value="0.2">中：0.20</option><option value="0.3" selected>通常：0.30</option><option value="0.4">強：0.40</option></select>
+    <label class="piano-match"><input id="piano-comparison-match" type="checkbox" checked>音量を揃える（比較ボタンのみ）</label>
+    <div class="studio-actions"><button type="button" onclick="pianoComparison.play('baseline')">旧版を聴く</button><button type="button" onclick="pianoComparison.play('improved')">改善版を聴く</button><button type="button" onclick="pianoComparison.play('source')">元サンプルを聴く</button><button type="button" onclick="pianoComparison.stop()">比較音を停止</button></div>
+    <p id="piano-comparison-status" role="status">同じ音高・Velocityで比較。旧版／改善版は0.6秒で離鍵、元サンプルは離鍵処理なし。</p>
+   </details>
+   <details><summary>音源クレジット</summary><p>Salamander Grand Piano — Alexander Holm / <a href="https://github.com/sfzinstruments/SalamanderGrandPiano">配布元</a> / <a href="https://creativecommons.org/licenses/by/3.0/">CC BY 3.0</a>。抜粋。改善版ピアノは元の自然減衰を保持。</p><p>VSCO 2 CE / VCSL — Versilian Studios・Sam Gossner / <a href="https://github.com/sgossner/VSCO-2-CE">Bass</a> / <a href="https://github.com/sgossner/VCSL">Drums</a> / CC0。</p></details>
+  </section>
   <section class="sheet-group"><h3>INFO</h3>    <section class="bg-slate-900/50 border border-slate-800 rounded-xl p-3">
     <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
         <div>
@@ -3223,6 +3258,330 @@ function deriveSustainBassDuration({ remainingBeats, secondsPerBeat }) {
 }
 // AUDIO BALANCE END.
 
+const STUDIO_MANIFEST = {"version":"studio-basic-2-piano","sources":{"piano":{"repository":"sfzinstruments/SalamanderGrandPiano","commit":"3382bf9496bba2486f5ab0de55a264d1dfc38404"},"vsco":{"repository":"sgossner/VSCO-2-CE","commit":"440300901dfe9275fd84e0b7763af1f8443ae62e"},"vcsl":{"repository":"sgossner/VCSL","commit":"c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e"}},"samples":[{"id":"piano-24-4","instrument":"piano","root":24,"layer":4,"bytes":2479481,"gitBlob":"886d82cb146d108be4d5ca342bfd9949991a08f2","url":"https://raw.githubusercontent.com/sfzinstruments/SalamanderGrandPiano/3382bf9496bba2486f5ab0de55a264d1dfc38404/Samples/C1v4.flac"},{"id":"piano-24-12","instrument":"piano","root":24,"layer":12,"bytes":2540684,"gitBlob":"29c3a15da3b698dfd28ac9beeea4e540f2357de0","url":"https://raw.githubusercontent.com/sfzinstruments/SalamanderGrandPiano/3382bf9496bba2486f5ab0de55a264d1dfc38404/Samples/C1v12.flac"},{"id":"release-24-1","instrument":"release","root":24,"layer":1,"bytes":65645,"gitBlob":"39208169c2a11e072ca31e7eaabee61678387053","url":"https://raw.githubusercontent.com/sfzinstruments/SalamanderGrandPiano/3382bf9496bba2486f5ab0de55a264d1dfc38404/Samples/rel4.flac"},{"id":"piano-30-4","instrument":"piano","root":30,"layer":4,"bytes":2613244,"gitBlob":"dcbae9ecaf328b1cee96b4c61888cf026cfde451","url":"https://raw.githubusercontent.com/sfzinstruments/SalamanderGrandPiano/3382bf9496bba2486f5ab0de55a264d1dfc38404/Samples/F%231v4.flac"},{"id":"piano-30-12","instrument":"piano","root":30,"layer":12,"bytes":2729124,"gitBlob":"dbccedc2ba13a084571db1cca3667b2b94294099","url":"https://raw.githubusercontent.com/sfzinstruments/SalamanderGrandPiano/3382bf9496bba2486f5ab0de55a264d1dfc38404/Samples/F%231v12.flac"},{"id":"release-30-1","instrument":"release","root":30,"layer":1,"bytes":64739,"gitBlob":"bc4ae72c7ef0c5d12350caf27fba8ef87cfbab93","url":"https://raw.githubusercontent.com/sfzinstruments/SalamanderGrandPiano/3382bf9496bba2486f5ab0de55a264d1dfc38404/Samples/rel10.flac"},{"id":"piano-36-4","instrument":"piano","root":36,"layer":4,"bytes":2222842,"gitBlob":"44069876a12eb7010efd1d42952bcec27d1c448b","url":"https://raw.githubusercontent.com/sfzinstruments/SalamanderGrandPiano/3382bf9496bba2486f5ab0de55a264d1dfc38404/Samples/C2v4.flac"},{"id":"piano-36-12","instrument":"piano","root":36,"layer":12,"bytes":2608263,"gitBlob":"02da76a4ea218bc75bed1d9eed35b7d1965ca255","url":"https://raw.githubusercontent.com/sfzinstruments/SalamanderGrandPiano/3382bf9496bba2486f5ab0de55a264d1dfc38404/Samples/C2v12.flac"},{"id":"release-36-1","instrument":"release","root":36,"layer":1,"bytes":64941,"gitBlob":"561295622d6485b7fef9feb19d308dfbfbf47783","url":"https://raw.githubusercontent.com/sfzinstruments/SalamanderGrandPiano/3382bf9496bba2486f5ab0de55a264d1dfc38404/Samples/rel16.flac"},{"id":"piano-42-4","instrument":"piano","root":42,"layer":4,"bytes":2174299,"gitBlob":"4920957694cb66c041c7a43718465cddf3138a94","url":"https://raw.githubusercontent.com/sfzinstruments/SalamanderGrandPiano/3382bf9496bba2486f5ab0de55a264d1dfc38404/Samples/F%232v4.flac"},{"id":"piano-42-12","instrument":"piano","root":42,"layer":12,"bytes":2363308,"gitBlob":"a458e12c74a8e8acf4e482aae6fd59548e3bd6a6","url":"https://raw.githubusercontent.com/sfzinstruments/SalamanderGrandPiano/3382bf9496bba2486f5ab0de55a264d1dfc38404/Samples/F%232v12.flac"},{"id":"release-42-1","instrument":"release","root":42,"layer":1,"bytes":62347,"gitBlob":"b9ee47ebf3d48620e164a030b8ee72e0cc4d099b","url":"https://raw.githubusercontent.com/sfzinstruments/SalamanderGrandPiano/3382bf9496bba2486f5ab0de55a264d1dfc38404/Samples/rel22.flac"},{"id":"piano-48-4","instrument":"piano","root":48,"layer":4,"bytes":1689449,"gitBlob":"f444418d4e08bf183c468fc47877a6edac4dc7b3","url":"https://raw.githubusercontent.com/sfzinstruments/SalamanderGrandPiano/3382bf9496bba2486f5ab0de55a264d1dfc38404/Samples/C3v4.flac"},{"id":"piano-48-12","instrument":"piano","root":48,"layer":12,"bytes":1753840,"gitBlob":"7e06c77fe2f687b01fa110b9be12ce5c6620ed46","url":"https://raw.githubusercontent.com/sfzinstruments/SalamanderGrandPiano/3382bf9496bba2486f5ab0de55a264d1dfc38404/Samples/C3v12.flac"},{"id":"release-48-1","instrument":"release","root":48,"layer":1,"bytes":62755,"gitBlob":"4a9b2167e81a0ad42e3fad35411da45bd8629ded","url":"https://raw.githubusercontent.com/sfzinstruments/SalamanderGrandPiano/3382bf9496bba2486f5ab0de55a264d1dfc38404/Samples/rel28.flac"},{"id":"piano-54-4","instrument":"piano","root":54,"layer":4,"bytes":1767209,"gitBlob":"9c606c221ffa7157f0154a0ea3745f49ab558d2e","url":"https://raw.githubusercontent.com/sfzinstruments/SalamanderGrandPiano/3382bf9496bba2486f5ab0de55a264d1dfc38404/Samples/F%233v4.flac"},{"id":"piano-54-12","instrument":"piano","root":54,"layer":12,"bytes":1806073,"gitBlob":"c54c2f93814e07043bcbd860d6f23456dbf6690b","url":"https://raw.githubusercontent.com/sfzinstruments/SalamanderGrandPiano/3382bf9496bba2486f5ab0de55a264d1dfc38404/Samples/F%233v12.flac"},{"id":"release-54-1","instrument":"release","root":54,"layer":1,"bytes":65028,"gitBlob":"dedc32cb6995836c03d8dba3478c8a14b8f83f1f","url":"https://raw.githubusercontent.com/sfzinstruments/SalamanderGrandPiano/3382bf9496bba2486f5ab0de55a264d1dfc38404/Samples/rel34.flac"},{"id":"piano-60-4","instrument":"piano","root":60,"layer":4,"bytes":1628805,"gitBlob":"e117320966904afc39687b40d6a1285ba2af4083","url":"https://raw.githubusercontent.com/sfzinstruments/SalamanderGrandPiano/3382bf9496bba2486f5ab0de55a264d1dfc38404/Samples/C4v4.flac"},{"id":"piano-60-12","instrument":"piano","root":60,"layer":12,"bytes":1776181,"gitBlob":"418e7e1b4ebedc6c9104f711118144941ee4cd06","url":"https://raw.githubusercontent.com/sfzinstruments/SalamanderGrandPiano/3382bf9496bba2486f5ab0de55a264d1dfc38404/Samples/C4v12.flac"},{"id":"release-60-1","instrument":"release","root":60,"layer":1,"bytes":63966,"gitBlob":"4c8946aaada7b4a9a15ef4cd080b4dd78ec40a0f","url":"https://raw.githubusercontent.com/sfzinstruments/SalamanderGrandPiano/3382bf9496bba2486f5ab0de55a264d1dfc38404/Samples/rel40.flac"},{"id":"piano-66-4","instrument":"piano","root":66,"layer":4,"bytes":1317911,"gitBlob":"54b88eb6ff6b483bb6167d5bafd51adb04312a72","url":"https://raw.githubusercontent.com/sfzinstruments/SalamanderGrandPiano/3382bf9496bba2486f5ab0de55a264d1dfc38404/Samples/F%234v4.flac"},{"id":"piano-66-12","instrument":"piano","root":66,"layer":12,"bytes":1549067,"gitBlob":"4787268dc66d6cc75093b92d39efaca3f32ecdea","url":"https://raw.githubusercontent.com/sfzinstruments/SalamanderGrandPiano/3382bf9496bba2486f5ab0de55a264d1dfc38404/Samples/F%234v12.flac"},{"id":"release-66-1","instrument":"release","root":66,"layer":1,"bytes":60464,"gitBlob":"d6d65cd0a0a76c5003002242a52ad252d9615a28","url":"https://raw.githubusercontent.com/sfzinstruments/SalamanderGrandPiano/3382bf9496bba2486f5ab0de55a264d1dfc38404/Samples/rel46.flac"},{"id":"piano-72-4","instrument":"piano","root":72,"layer":4,"bytes":1468588,"gitBlob":"2b72e6ac462075d0b79432ddb4f5fbbe114ca6be","url":"https://raw.githubusercontent.com/sfzinstruments/SalamanderGrandPiano/3382bf9496bba2486f5ab0de55a264d1dfc38404/Samples/C5v4.flac"},{"id":"piano-72-12","instrument":"piano","root":72,"layer":12,"bytes":1537892,"gitBlob":"773aef039444641fe4d1ec0aa66aad192b40c499","url":"https://raw.githubusercontent.com/sfzinstruments/SalamanderGrandPiano/3382bf9496bba2486f5ab0de55a264d1dfc38404/Samples/C5v12.flac"},{"id":"release-72-1","instrument":"release","root":72,"layer":1,"bytes":61757,"gitBlob":"f712a57b96e7bfcd0d8d3336cd0ac40f95bddd6d","url":"https://raw.githubusercontent.com/sfzinstruments/SalamanderGrandPiano/3382bf9496bba2486f5ab0de55a264d1dfc38404/Samples/rel52.flac"},{"id":"piano-78-4","instrument":"piano","root":78,"layer":4,"bytes":1119439,"gitBlob":"142a45fd5c55bdabcf3bb7ee19f3934fac8c10c2","url":"https://raw.githubusercontent.com/sfzinstruments/SalamanderGrandPiano/3382bf9496bba2486f5ab0de55a264d1dfc38404/Samples/F%235v4.flac"},{"id":"piano-78-12","instrument":"piano","root":78,"layer":12,"bytes":1169784,"gitBlob":"62e1d10b8942895485116d08f915aea00f39e306","url":"https://raw.githubusercontent.com/sfzinstruments/SalamanderGrandPiano/3382bf9496bba2486f5ab0de55a264d1dfc38404/Samples/F%235v12.flac"},{"id":"release-78-1","instrument":"release","root":78,"layer":1,"bytes":62869,"gitBlob":"bc1647407eb3a27315b8febaf1345e4efa49ebb6","url":"https://raw.githubusercontent.com/sfzinstruments/SalamanderGrandPiano/3382bf9496bba2486f5ab0de55a264d1dfc38404/Samples/rel58.flac"},{"id":"piano-84-4","instrument":"piano","root":84,"layer":4,"bytes":601137,"gitBlob":"c92b02529426929342b3354731b32b1fd6f06aaf","url":"https://raw.githubusercontent.com/sfzinstruments/SalamanderGrandPiano/3382bf9496bba2486f5ab0de55a264d1dfc38404/Samples/C6v4.flac"},{"id":"piano-84-12","instrument":"piano","root":84,"layer":12,"bytes":722945,"gitBlob":"7511b31db67a31f8555d83aa5d5f48fbe9365b87","url":"https://raw.githubusercontent.com/sfzinstruments/SalamanderGrandPiano/3382bf9496bba2486f5ab0de55a264d1dfc38404/Samples/C6v12.flac"},{"id":"release-84-1","instrument":"release","root":84,"layer":1,"bytes":61812,"gitBlob":"d59eeb08d25475503496ad854073dd3284084d3b","url":"https://raw.githubusercontent.com/sfzinstruments/SalamanderGrandPiano/3382bf9496bba2486f5ab0de55a264d1dfc38404/Samples/rel64.flac"},{"id":"piano-90-4","instrument":"piano","root":90,"layer":4,"bytes":605865,"gitBlob":"cd1f16223c7b79338796155d37e8f9e022dee7a8","url":"https://raw.githubusercontent.com/sfzinstruments/SalamanderGrandPiano/3382bf9496bba2486f5ab0de55a264d1dfc38404/Samples/F%236v4.flac"},{"id":"piano-90-12","instrument":"piano","root":90,"layer":12,"bytes":698769,"gitBlob":"3d365e417225a2a93687073a55cb9b96a691e918","url":"https://raw.githubusercontent.com/sfzinstruments/SalamanderGrandPiano/3382bf9496bba2486f5ab0de55a264d1dfc38404/Samples/F%236v12.flac"},{"id":"release-90-1","instrument":"release","root":90,"layer":1,"bytes":62235,"gitBlob":"57a766e12976367e2087155dff3bdf46e658b923","url":"https://raw.githubusercontent.com/sfzinstruments/SalamanderGrandPiano/3382bf9496bba2486f5ab0de55a264d1dfc38404/Samples/rel70.flac"},{"id":"piano-96-4","instrument":"piano","root":96,"layer":4,"bytes":401277,"gitBlob":"473d480a9216c2cd0d73e8413d42f02de614e388","url":"https://raw.githubusercontent.com/sfzinstruments/SalamanderGrandPiano/3382bf9496bba2486f5ab0de55a264d1dfc38404/Samples/C7v4.flac"},{"id":"piano-96-12","instrument":"piano","root":96,"layer":12,"bytes":459884,"gitBlob":"bfb00b6a6218ccf23e9101008701bf67e9d927b6","url":"https://raw.githubusercontent.com/sfzinstruments/SalamanderGrandPiano/3382bf9496bba2486f5ab0de55a264d1dfc38404/Samples/C7v12.flac"},{"id":"release-96-1","instrument":"release","root":96,"layer":1,"bytes":55686,"gitBlob":"2f702d46a46c2885ae121d4d003d5e186127de54","url":"https://raw.githubusercontent.com/sfzinstruments/SalamanderGrandPiano/3382bf9496bba2486f5ab0de55a264d1dfc38404/Samples/rel76.flac"},{"id":"bass-34-1","instrument":"bass","root":34,"layer":1,"bytes":344328,"gitBlob":"6b42c2b752ac8aa098fa512b1c068229036f9d55","url":"https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Solo%20Contrabass/Pizz/BKCtbss_Pizz_A%230_v1_rr1.wav"},{"id":"bass-34-3","instrument":"bass","root":34,"layer":3,"bytes":417360,"gitBlob":"b5525c15a77e1871feb42f70cc17a6650aee4355","url":"https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Solo%20Contrabass/Pizz/BKCtbss_Pizz_A%230_v3_rr1.wav"},{"id":"bass-45-1","instrument":"bass","root":45,"layer":1,"bytes":623260,"gitBlob":"311a5027a127715530f1e723a21f7927d280d493","url":"https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Solo%20Contrabass/Pizz/BKCtbss_Pizz_A1_v1_rr1.wav"},{"id":"bass-59-1","instrument":"bass","root":59,"layer":1,"bytes":417472,"gitBlob":"c5bfef7aaa68a98928f172b8572711ea6ce8975d","url":"https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Solo%20Contrabass/Pizz/BKCtbss_Pizz_B2_v1_rr1.wav"},{"id":"bass-49-1","instrument":"bass","root":49,"layer":1,"bytes":513824,"gitBlob":"16b7ca596182a49fe693b81ed925df8d2fc1be59","url":"https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Solo%20Contrabass/Pizz/BKCtbss_Pizz_C%232_v1_rr1.wav"},{"id":"bass-36-1","instrument":"bass","root":36,"layer":1,"bytes":270720,"gitBlob":"46a4f947083669e7281be98b16c89b434529ea9e","url":"https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Solo%20Contrabass/Pizz/BKCtbss_Pizz_C1_v1_rr1.wav"},{"id":"bass-36-3","instrument":"bass","root":36,"layer":3,"bytes":400396,"gitBlob":"eb8c1aa8049e386288b71b7678098352a0c8f037","url":"https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Solo%20Contrabass/Pizz/BKCtbss_Pizz_C1_v3_rr1.wav"},{"id":"bass-38-1","instrument":"bass","root":38,"layer":1,"bytes":856252,"gitBlob":"623693ad1479a3e1da230fe62b8d012406412d86","url":"https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Solo%20Contrabass/Pizz/BKCtbss_Pizz_D1_v1_rr1.wav"},{"id":"bass-28-1","instrument":"bass","root":28,"layer":1,"bytes":423964,"gitBlob":"8e025f9d9f072fd42a12ff27bad023f95016203f","url":"https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Solo%20Contrabass/Pizz/BKCtbss_Pizz_E0_v1_rr1.wav"},{"id":"bass-28-3","instrument":"bass","root":28,"layer":3,"bytes":901744,"gitBlob":"3258f6728cacc74c5ad6addadaa8a61cbb9d57cd","url":"https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Solo%20Contrabass/Pizz/BKCtbss_Pizz_E0_v3_rr1.wav"},{"id":"bass-40-1","instrument":"bass","root":40,"layer":1,"bytes":294356,"gitBlob":"da8962289a777507e94094c6dde7131916ca1b64","url":"https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Solo%20Contrabass/Pizz/BKCtbss_Pizz_E1_v1_rr1.wav"},{"id":"bass-40-3","instrument":"bass","root":40,"layer":3,"bytes":518876,"gitBlob":"1cada4277b16b2eb8b240d4a6da4bbd3aca989a0","url":"https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Solo%20Contrabass/Pizz/BKCtbss_Pizz_E1_v3_rr1.wav"},{"id":"bass-52-1","instrument":"bass","root":52,"layer":1,"bytes":438040,"gitBlob":"ba882653db7ef6fcebc5dc0e373707cdca944e62","url":"https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Solo%20Contrabass/Pizz/BKCtbss_Pizz_E2_v1_rr1.wav"},{"id":"bass-30-1","instrument":"bass","root":30,"layer":1,"bytes":256360,"gitBlob":"4578fd1b4f56290dc35ee453105e487efb3c5c67","url":"https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Solo%20Contrabass/Pizz/BKCtbss_Pizz_F%230_v1_rr1.wav"},{"id":"bass-30-3","instrument":"bass","root":30,"layer":3,"bytes":828940,"gitBlob":"4e6933681d86ea908000d9319e01db9858b499e1","url":"https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Solo%20Contrabass/Pizz/BKCtbss_Pizz_F%230_v3_rr1.wav"},{"id":"bass-42-1","instrument":"bass","root":42,"layer":1,"bytes":868632,"gitBlob":"757d0487bc7ad3461aac13cdce1999fabb3952b3","url":"https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Solo%20Contrabass/Pizz/BKCtbss_Pizz_F%231_v1_rr1.wav"},{"id":"bass-44-1","instrument":"bass","root":44,"layer":1,"bytes":601752,"gitBlob":"1b3774619e9ae958177bc6bd4429d32fbef0c0c8","url":"https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Solo%20Contrabass/Pizz/BKCtbss_Pizz_G%231_v1_rr1.wav"},{"id":"bass-56-1","instrument":"bass","root":56,"layer":1,"bytes":376048,"gitBlob":"b32004f92c141a30ba5e314dd0cc1d2687b92856","url":"https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Solo%20Contrabass/Pizz/BKCtbss_Pizz_G%232_v1_rr1.wav"},{"id":"bass-31-1","instrument":"bass","root":31,"layer":1,"bytes":169640,"gitBlob":"45d11b0a0545d59407f740b938461b205e8c91cb","url":"https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Solo%20Contrabass/Pizz/BKCtbss_Pizz_G0_v1_rr1.wav"},{"id":"bass-31-3","instrument":"bass","root":31,"layer":3,"bytes":636880,"gitBlob":"219542998cac263bb0b5bd03ab02fd6bbdcb3d21","url":"https://raw.githubusercontent.com/sgossner/VSCO-2-CE/440300901dfe9275fd84e0b7763af1f8443ae62e/Strings/Solo%20Contrabass/Pizz/BKCtbss_Pizz_G0_v3_rr1.wav"},{"id":"kick-0-1","instrument":"kick","root":0,"layer":1,"bytes":367124,"gitBlob":"5f068b40b13f887c170d574b916dd21927f545ca","url":"https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Membranophones/Struck%20Membranophones/Bass%20Drum%201/BDrumNew_hit_v3_rr1_Sum.wav"},{"id":"kick-0-2","instrument":"kick","root":0,"layer":2,"bytes":1105152,"gitBlob":"93ebf3571cef69c65ba1acba1d746e5bfa6c7db8","url":"https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Membranophones/Struck%20Membranophones/Bass%20Drum%201/BDrumNew_hit_v7_rr1_Sum.wav"},{"id":"snare-0-1","instrument":"snare","root":0,"layer":1,"bytes":154688,"gitBlob":"75756059a526bc237109d57013df0967da0478bd","url":"https://cdn.jsdelivr.net/gh/sgossner/VCSL@c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Membranophones/Struck%20Membranophones/Snare%20Drum%2C%20Modern%202/Snare3M_HitSN_v2_rr1_Mid.wav","sourceURL":"https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Membranophones/Struck%20Membranophones/Snare%20Drum%2C%20Modern%202/Snare3M_HitSN_v2_rr1_Mid.wav"},{"id":"snare-0-2","instrument":"snare","root":0,"layer":2,"bytes":232712,"gitBlob":"2396abbaf8e58ffc6cd12bbe23b8659e823573a7","url":"https://cdn.jsdelivr.net/gh/sgossner/VCSL@c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Membranophones/Struck%20Membranophones/Snare%20Drum%2C%20Modern%202/Snare3M_HitSN_v5_rr1_Mid.wav","sourceURL":"https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Membranophones/Struck%20Membranophones/Snare%20Drum%2C%20Modern%202/Snare3M_HitSN_v5_rr1_Mid.wav"},{"id":"hat-0-1","instrument":"hat","root":0,"layer":1,"bytes":210708,"gitBlob":"3e4a102b031a342c58f59e9985ee6111e31b4077","url":"https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Hi-Hat%20Cymbal/HiHat_HitC_v1_rr1_Mid.wav"},{"id":"hat-0-2","instrument":"hat","root":0,"layer":2,"bytes":266280,"gitBlob":"4ff2616487d9b8f38bc623dfcedc9e3b6b9f4af4","url":"https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Hi-Hat%20Cymbal/HiHat_HitC_v4_rr1_Mid.wav"},{"id":"clap-0-1","instrument":"clap","root":0,"layer":1,"bytes":81214,"gitBlob":"60d03da6e15b999762166efce7a67ecef693cbcb","url":"https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Claps/SoloClap_vl1.wav"},{"id":"clap-0-2","instrument":"clap","root":0,"layer":2,"bytes":119404,"gitBlob":"2c1ad5ace58be6418c2b410618a9ee98e1db696f","url":"https://raw.githubusercontent.com/sgossner/VCSL/c1ea7bcc3c7309650ab0da9d15c9cd1fbc4a4c7e/Idiophones/Struck%20Idiophones/Claps/SoloClap_vl4.wav"},{"id":"piano-36-8","instrument":"piano","root":36,"layer":8,"bytes":2561685,"gitBlob":"377ae98aa10f4e1698b1a0492c24a5817a9293ec","url":"https://raw.githubusercontent.com/sfzinstruments/SalamanderGrandPiano/3382bf9496bba2486f5ab0de55a264d1dfc38404/Samples/C2v8.flac"},{"id":"piano-39-4","instrument":"piano","root":39,"layer":4,"bytes":2546475,"gitBlob":"02d16509980233442732fd8bb270e381d86b826b","url":"https://raw.githubusercontent.com/sfzinstruments/SalamanderGrandPiano/3382bf9496bba2486f5ab0de55a264d1dfc38404/Samples/D%232v4.flac"},{"id":"piano-39-8","instrument":"piano","root":39,"layer":8,"bytes":2577675,"gitBlob":"378ef8fc0820f605b5645e4fd573bbde11350665","url":"https://raw.githubusercontent.com/sfzinstruments/SalamanderGrandPiano/3382bf9496bba2486f5ab0de55a264d1dfc38404/Samples/D%232v8.flac"},{"id":"piano-39-12","instrument":"piano","root":39,"layer":12,"bytes":2579711,"gitBlob":"d1a5949eb9cdbc805ce9ed808424e593930549d7","url":"https://raw.githubusercontent.com/sfzinstruments/SalamanderGrandPiano/3382bf9496bba2486f5ab0de55a264d1dfc38404/Samples/D%232v12.flac"},{"id":"piano-42-8","instrument":"piano","root":42,"layer":8,"bytes":2331259,"gitBlob":"ffb5fdab4db9271b211c36fa2c2da6567d2ac86a","url":"https://raw.githubusercontent.com/sfzinstruments/SalamanderGrandPiano/3382bf9496bba2486f5ab0de55a264d1dfc38404/Samples/F%232v8.flac"},{"id":"piano-45-4","instrument":"piano","root":45,"layer":4,"bytes":1898385,"gitBlob":"174e85b13bb2a848aa7a8d326d230e8118b45f26","url":"https://raw.githubusercontent.com/sfzinstruments/SalamanderGrandPiano/3382bf9496bba2486f5ab0de55a264d1dfc38404/Samples/A2v4.flac"},{"id":"piano-45-8","instrument":"piano","root":45,"layer":8,"bytes":1901758,"gitBlob":"d3859c5c2c2d54ffe7c50989bd38c39a4e0c2f05","url":"https://raw.githubusercontent.com/sfzinstruments/SalamanderGrandPiano/3382bf9496bba2486f5ab0de55a264d1dfc38404/Samples/A2v8.flac"},{"id":"piano-45-12","instrument":"piano","root":45,"layer":12,"bytes":1976480,"gitBlob":"5e09e9e0dee6a74ba90e133bd4f7d127b9f8490b","url":"https://raw.githubusercontent.com/sfzinstruments/SalamanderGrandPiano/3382bf9496bba2486f5ab0de55a264d1dfc38404/Samples/A2v12.flac"},{"id":"piano-48-8","instrument":"piano","root":48,"layer":8,"bytes":1741485,"gitBlob":"c2d2a2019e13bf292923667a3db1df8a47ea5cfc","url":"https://raw.githubusercontent.com/sfzinstruments/SalamanderGrandPiano/3382bf9496bba2486f5ab0de55a264d1dfc38404/Samples/C3v8.flac"},{"id":"piano-51-4","instrument":"piano","root":51,"layer":4,"bytes":1746227,"gitBlob":"c15e1da31dc99ff6adcc3cad8ea22f08201b0dd8","url":"https://raw.githubusercontent.com/sfzinstruments/SalamanderGrandPiano/3382bf9496bba2486f5ab0de55a264d1dfc38404/Samples/D%233v4.flac"},{"id":"piano-51-8","instrument":"piano","root":51,"layer":8,"bytes":1770977,"gitBlob":"39c4deeac4149cb57627669f9aa7ffe2e7cf96dc","url":"https://raw.githubusercontent.com/sfzinstruments/SalamanderGrandPiano/3382bf9496bba2486f5ab0de55a264d1dfc38404/Samples/D%233v8.flac"},{"id":"piano-51-12","instrument":"piano","root":51,"layer":12,"bytes":1769835,"gitBlob":"7c636afe2c88b455620bcf55621035c0998b391c","url":"https://raw.githubusercontent.com/sfzinstruments/SalamanderGrandPiano/3382bf9496bba2486f5ab0de55a264d1dfc38404/Samples/D%233v12.flac"},{"id":"piano-54-8","instrument":"piano","root":54,"layer":8,"bytes":1805025,"gitBlob":"8b928e0affb6f03174588e8d1bce28b8d538f127","url":"https://raw.githubusercontent.com/sfzinstruments/SalamanderGrandPiano/3382bf9496bba2486f5ab0de55a264d1dfc38404/Samples/F%233v8.flac"},{"id":"piano-57-4","instrument":"piano","root":57,"layer":4,"bytes":1757672,"gitBlob":"85daca85afedb67bcb43091f237369fd11ab471f","url":"https://raw.githubusercontent.com/sfzinstruments/SalamanderGrandPiano/3382bf9496bba2486f5ab0de55a264d1dfc38404/Samples/A3v4.flac"},{"id":"piano-57-8","instrument":"piano","root":57,"layer":8,"bytes":1787465,"gitBlob":"b4620f98c824e392d397866958d2e0b95db3f7ee","url":"https://raw.githubusercontent.com/sfzinstruments/SalamanderGrandPiano/3382bf9496bba2486f5ab0de55a264d1dfc38404/Samples/A3v8.flac"},{"id":"piano-57-12","instrument":"piano","root":57,"layer":12,"bytes":1788330,"gitBlob":"eeb68a29bca9d50f817cbf667fef6cf52da805d5","url":"https://raw.githubusercontent.com/sfzinstruments/SalamanderGrandPiano/3382bf9496bba2486f5ab0de55a264d1dfc38404/Samples/A3v12.flac"},{"id":"piano-60-8","instrument":"piano","root":60,"layer":8,"bytes":1774472,"gitBlob":"5d1c81dd7ee1d21cbec2fa1f2f605c098cf19679","url":"https://raw.githubusercontent.com/sfzinstruments/SalamanderGrandPiano/3382bf9496bba2486f5ab0de55a264d1dfc38404/Samples/C4v8.flac"},{"id":"piano-63-4","instrument":"piano","root":63,"layer":4,"bytes":1550296,"gitBlob":"84b262757ef3d13bb03e2ce2f91bf8f20080de87","url":"https://raw.githubusercontent.com/sfzinstruments/SalamanderGrandPiano/3382bf9496bba2486f5ab0de55a264d1dfc38404/Samples/D%234v4.flac"},{"id":"piano-63-8","instrument":"piano","root":63,"layer":8,"bytes":1652067,"gitBlob":"d29ac26013b03f46ec0c787c05e494437cdd0213","url":"https://raw.githubusercontent.com/sfzinstruments/SalamanderGrandPiano/3382bf9496bba2486f5ab0de55a264d1dfc38404/Samples/D%234v8.flac"},{"id":"piano-63-12","instrument":"piano","root":63,"layer":12,"bytes":1645028,"gitBlob":"618418d9da018a7b39f76ec08929b9cad232f993","url":"https://raw.githubusercontent.com/sfzinstruments/SalamanderGrandPiano/3382bf9496bba2486f5ab0de55a264d1dfc38404/Samples/D%234v12.flac"},{"id":"piano-66-8","instrument":"piano","root":66,"layer":8,"bytes":1495175,"gitBlob":"191f7ee347d4513c8c7f0f41222239cfdbf7f497","url":"https://raw.githubusercontent.com/sfzinstruments/SalamanderGrandPiano/3382bf9496bba2486f5ab0de55a264d1dfc38404/Samples/F%234v8.flac"},{"id":"piano-69-4","instrument":"piano","root":69,"layer":4,"bytes":1383657,"gitBlob":"1a9018881386288b67074613e667fbf8c19495d9","url":"https://raw.githubusercontent.com/sfzinstruments/SalamanderGrandPiano/3382bf9496bba2486f5ab0de55a264d1dfc38404/Samples/A4v4.flac"},{"id":"piano-69-8","instrument":"piano","root":69,"layer":8,"bytes":1382828,"gitBlob":"f2d55a0077eca5782b8a70ae42bbe3230dc2cc26","url":"https://raw.githubusercontent.com/sfzinstruments/SalamanderGrandPiano/3382bf9496bba2486f5ab0de55a264d1dfc38404/Samples/A4v8.flac"},{"id":"piano-69-12","instrument":"piano","root":69,"layer":12,"bytes":1451680,"gitBlob":"b585d2e01dea3a2a9af9fa79d523d00053003e5b","url":"https://raw.githubusercontent.com/sfzinstruments/SalamanderGrandPiano/3382bf9496bba2486f5ab0de55a264d1dfc38404/Samples/A4v12.flac"},{"id":"piano-72-8","instrument":"piano","root":72,"layer":8,"bytes":1516971,"gitBlob":"8f2a4baab012730693c1b173ce463056c22e42d0","url":"https://raw.githubusercontent.com/sfzinstruments/SalamanderGrandPiano/3382bf9496bba2486f5ab0de55a264d1dfc38404/Samples/C5v8.flac"},{"id":"piano-75-4","instrument":"piano","root":75,"layer":4,"bytes":1263747,"gitBlob":"64ad0790398a06cea1f047e846e3365d2d142cc5","url":"https://raw.githubusercontent.com/sfzinstruments/SalamanderGrandPiano/3382bf9496bba2486f5ab0de55a264d1dfc38404/Samples/D%235v4.flac"},{"id":"piano-75-8","instrument":"piano","root":75,"layer":8,"bytes":1276573,"gitBlob":"2669ad6e47a5d17882db0960d2a05f162b2f0b1a","url":"https://raw.githubusercontent.com/sfzinstruments/SalamanderGrandPiano/3382bf9496bba2486f5ab0de55a264d1dfc38404/Samples/D%235v8.flac"},{"id":"piano-75-12","instrument":"piano","root":75,"layer":12,"bytes":1346881,"gitBlob":"1f5e56bd4b02d7f30e88eef34ca587377ad3216f","url":"https://raw.githubusercontent.com/sfzinstruments/SalamanderGrandPiano/3382bf9496bba2486f5ab0de55a264d1dfc38404/Samples/D%235v12.flac"},{"id":"piano-78-8","instrument":"piano","root":78,"layer":8,"bytes":1164441,"gitBlob":"1128d4579bb3a2d48ae1e53104377fd05d566463","url":"https://raw.githubusercontent.com/sfzinstruments/SalamanderGrandPiano/3382bf9496bba2486f5ab0de55a264d1dfc38404/Samples/F%235v8.flac"},{"id":"piano-81-4","instrument":"piano","root":81,"layer":4,"bytes":717980,"gitBlob":"b5a67dd216af1634e63f6dda86eaa814c4128fac","url":"https://raw.githubusercontent.com/sfzinstruments/SalamanderGrandPiano/3382bf9496bba2486f5ab0de55a264d1dfc38404/Samples/A5v4.flac"},{"id":"piano-81-8","instrument":"piano","root":81,"layer":8,"bytes":1109347,"gitBlob":"06c2ab95dda24dfd66c6a29b2add45dca098163d","url":"https://raw.githubusercontent.com/sfzinstruments/SalamanderGrandPiano/3382bf9496bba2486f5ab0de55a264d1dfc38404/Samples/A5v8.flac"},{"id":"piano-81-12","instrument":"piano","root":81,"layer":12,"bytes":1119370,"gitBlob":"2b6646139a55836d798370917dc3c0c9ff7399ea","url":"https://raw.githubusercontent.com/sfzinstruments/SalamanderGrandPiano/3382bf9496bba2486f5ab0de55a264d1dfc38404/Samples/A5v12.flac"},{"id":"piano-84-8","instrument":"piano","root":84,"layer":8,"bytes":695617,"gitBlob":"4728c69c56c82a98e54cf93a289afd282705317d","url":"https://raw.githubusercontent.com/sfzinstruments/SalamanderGrandPiano/3382bf9496bba2486f5ab0de55a264d1dfc38404/Samples/C6v8.flac"}],"bytes":110402304};
+
+// STUDIO BASIC BEGIN: sample rendering is independent of harmony, scheduling and pointer ownership.
+class StudioSampleBank {
+    constructor(manifest) {
+        this.manifest = manifest;
+        this.buffers = new Map();
+        this.ready = false;
+    }
+    select(instrument, midi, velocity, profile = 'improved') {
+        const candidates = this.manifest.samples.filter(s => s.instrument === instrument &&
+            (instrument !== 'piano' || profile !== 'baseline' || (s.root % 6 === 0 && [4,12].includes(s.layer))));
+        if (!candidates.length) throw new Error('Missing instrument: ' + instrument);
+        const root = candidates.reduce((a,b) => Math.abs(a.root-midi) <= Math.abs(b.root-midi) ? a : b).root;
+        const layers = candidates.filter(s => s.root === root).sort((a,b) => a.layer-b.layer);
+        const normalized=Math.max(0,Math.min(.999,velocity));
+        // Three piano layers are soft/medium/strong anchors. The normal .30 performance
+        // velocity reaches the middle layer instead of immediately selecting the strongest.
+        // Two-layer legacy piano and all other instruments retain their original thresholds.
+        const index=instrument==='piano' && profile!=='baseline' && layers.length===3
+            ? Math.round(normalized*(layers.length-1)) : Math.floor(normalized*layers.length);
+        const row = layers[Math.min(layers.length-1,index)];
+        const buffer = this.buffers.get(row.id);
+        if (!buffer) throw new Error('Missing sample: ' + row.id);
+        return { row, buffer, rate: Math.pow(2,(midi-root)/12) };
+    }
+}
+
+// A genre can replace any one part backend without changing AudioEngine callers.
+const STUDIO_PARTS = Object.freeze({
+    melody: Object.freeze({instrument:'piano',gain:.8,releaseInstrument:'release'}),
+    chord: Object.freeze({instrument:'piano',gain:.65,releaseInstrument:'release'}),
+    bass: Object.freeze({instrument:'bass',gain:.9}),
+    drums: Object.freeze({instruments:Object.freeze({kick:'kick',snare:'snare',hat:'hat',clap:'clap'}),gain:.65})
+});
+// Manual performance defaults; future sound sets can supply their own part map.
+const STUDIO_MANUAL_RELEASE_SECONDS = Object.freeze({melody:.45,chord:1.2});
+class StudioPartBackend {
+    constructor(bank, definition) { this.bank=bank;this.definition=definition; }
+    select(midi,velocity,articulation=null,profile='improved') {
+        return this.bank.select(this.definition.instruments?.[articulation] ?? this.definition.instrument,midi,velocity,profile);
+    }
+}
+class StudioSampleRenderer {
+    constructor(engine, bank) {
+        this.engine = engine;
+        this.bank = bank;
+        this.outputs = null;
+        this.backends = Object.fromEntries(Object.entries(STUDIO_PARTS).map(([part,definition])=>[part,new StudioPartBackend(bank,definition)]));
+    }
+    init() {
+        if (this.outputs) return;
+        const ctx = this.engine.ctx;
+        // No compressor/reverb or make-up gain. STANDARD never enters this bus.
+        this.outputs = Object.fromEntries(Object.entries(this.backends).map(([part,backend]) => {
+            const gain = ctx.createGain(); gain.gain.value = backend.definition.gain;
+            gain.connect(this.engine.partOutputs[part]); return [part,gain];
+        }));
+    }
+    tone({note,octave,duration,volume,baseVelocity,mixRole,groupId,held,now}) {
+        const part = mixRole.endsWith('bass') ? 'bass' : mixRole.endsWith('chord') ? 'chord' : 'melody';
+        const midi = (octave+1)*12+noteIndex(note);
+        // Timbre dynamics use the performance velocity, not register/part compensation.
+        const settings=this.engine.groups.get(groupId)?.snapshot;
+        const pianoProfile=settings?.pianoProfile ?? this.engine.pianoProfile;
+        const pianoReleaseSeconds=settings?.manualReleaseSeconds?.[part] ?? this.engine.manualReleaseSeconds[part];
+        const selected = this.backends[part].select(midi, Math.min(1,baseVelocity/.45),null,pianoProfile);
+        return this.start(selected, {part,groupId,held,now,duration,volume,note,octave,mixRole,baseVelocity,midi,pianoProfile,pianoReleaseSeconds});
+    }
+    drum(instrument, now, options) {
+        const nominal = {kick:.45,snare:.2,hat:.06,clap:.25}[instrument];
+        const volume = options.velocity ?? nominal;
+        const selected = this.backends.drums.select(0,Math.min(1,volume/nominal),instrument);
+        const groupId = options.groupId ?? this.engine.createVoiceGroup('drums');
+        const id = this.start(selected,{part:'drums',groupId,held:false,now,volume,duration:selected.buffer.duration,baseVelocity:volume});
+        this.engine.finishVoiceGroup(groupId);
+        return id;
+    }
+    start(selected, spec) {
+        this.init();
+        const e = this.engine, ctx = e.ctx, group = e.groups.get(spec.groupId);
+        if (!group || group.status !== 'active') return null;
+        const source = ctx.createBufferSource(), gain = ctx.createGain();
+        source.buffer = selected.buffer; source.playbackRate.value = selected.rate;
+        source.connect(gain); gain.connect(this.outputs[spec.part]);
+        const voiceId = ++e.nextVoiceId;
+        const voice = {voiceId, groupId:spec.groupId,owner:group.owner,note:spec.note,octave:spec.octave,
+            mixRole:spec.mixRole,baseVelocity:spec.baseVelocity,mixedVelocity:spec.volume,
+            startTime:spec.now,status:spec.held?'holding':'releasing',sources:[source],gains:[gain],nodes:[source,gain],
+            backend:'studio',part:spec.part,midi:spec.midi,
+            pianoProfile:spec.pianoProfile ?? e.pianoProfile,pianoReleaseSeconds:spec.pianoReleaseSeconds ?? e.manualReleaseSeconds[spec.part],
+            sampleId:selected.row.id,playbackRate:selected.rate};
+        e.voices.set(voiceId,voice); group.voiceIds.add(voiceId);
+        source.onended = () => e.endVoiceSource(voiceId,source);
+        gain.gain.setValueAtTime(0,spec.now);
+        gain.gain.linearRampToValueAtTime(spec.volume,spec.now+.002);
+        const naturalEnd = spec.now+selected.buffer.duration/selected.rate;
+        source.start(spec.now);
+        if (spec.held && ['melody','chord'].includes(spec.part) && voice.pianoProfile === 'baseline' && selected.buffer.duration > 12) {
+            voice.legacyFadeStart=spec.now+11.9/selected.rate;voice.legacyEnd=spec.now+12/selected.rate;
+            gain.gain.setValueAtTime(spec.volume,voice.legacyFadeStart);
+            gain.gain.linearRampToValueAtTime(0,voice.legacyEnd);source.stop(voice.legacyEnd);
+        }
+        if (!spec.held && spec.part !== 'drums') {
+            const end = Math.min(naturalEnd,spec.now+spec.duration+.3);
+            const release = Math.max(spec.now+.003,end-.3);
+            gain.gain.setValueAtTime(spec.volume,release);
+            gain.gain.linearRampToValueAtTime(0,end);
+            source.stop(end+.01);
+        }
+        return voiceId;
+    }
+    pianoGainAt(voice, time) {
+        let value = voice.mixedVelocity * Math.max(0, Math.min(1,(time-voice.startTime)/.002));
+        if (voice.pianoProfile === 'baseline' && time > voice.legacyFadeStart) {
+            value *= Math.max(0,(voice.legacyEnd-time)/(voice.legacyEnd-voice.legacyFadeStart));
+        }
+        const release=voice.pianoReleaseEnvelope;
+        if (release && time >= release.start) {
+            const t=Math.max(0,Math.min(1,(time-release.start)/release.seconds));
+            value=release.level*(.5+.5*Math.cos(Math.PI*t));
+        }
+        return value;
+    }
+    releasePiano(voice, now = this.engine.ctx.currentTime, seconds = voice.pianoReleaseSeconds) {
+        const level=this.pianoGainAt(voice,now);
+        voice.pianoReleaseEnvelope={start:now,seconds,level};
+        voice.gains.forEach(node=>{
+            // Explicitly anchor the known envelope; do not depend on AudioParam.value
+            // reflecting an in-flight attack or on Safari cancelAndHold support.
+            const param=node.gain;
+            param.cancelScheduledValues(now);param.setValueAtTime(level,now);
+            for(let i=1;i<=64;i++)param.linearRampToValueAtTime(level*(.5+.5*Math.cos(Math.PI*i/64)),now+seconds*i/64);
+        });
+        voice.sources.forEach(source=>source.stop(now+seconds+.01));
+    }
+    cancelPiano(voice) {
+        if (!voice || voice.backend !== 'studio' || !['melody','chord'].includes(voice.part) || voice.pianoProfile === 'baseline') return;
+        const now=this.engine.ctx.currentTime;
+        if (voice.startTime>now) {
+            voice.gains.forEach(n=>{n.gain.cancelScheduledValues(now);n.gain.setValueAtTime(0,now);});
+            voice.sources.forEach(s=>s.stop(now));
+        } else this.releasePiano(voice,now,.02);
+        voice.releaseRequested=true;voice.status='releasing';
+    }
+    releaseNoise(voice) {
+        const instrument=this.backends[voice.part]?.definition.releaseInstrument;
+        if (!this.bank.ready || !instrument || !voice.midi || voice.startTime > this.engine.ctx.currentTime) return;
+        const selected = this.bank.select(instrument,voice.midi,.5);
+        const ctx = this.engine.ctx, source = ctx.createBufferSource(), gain = ctx.createGain();
+        source.buffer = selected.buffer; source.playbackRate.value = selected.rate;
+        const improved=voice.pianoProfile !== 'baseline';
+        const level=voice.mixedVelocity * (improved ? .0035 : .014) * Math.exp(-(ctx.currentTime-voice.startTime)*.3);
+        const end=ctx.currentTime+Math.min(.45,selected.buffer.duration/selected.rate);
+        if (improved) {
+            gain.gain.setValueAtTime(0,ctx.currentTime);
+            gain.gain.linearRampToValueAtTime(level,ctx.currentTime+.003);
+            gain.gain.setValueAtTime(level,Math.max(ctx.currentTime+.003,end-.05));
+            gain.gain.linearRampToValueAtTime(0,end);
+        } else gain.gain.value=level;
+        source.connect(gain); gain.connect(this.outputs[voice.part]);
+        voice.sources.push(source); voice.nodes.push(source,gain);
+        source.onended = () => this.engine.endVoiceSource(voice.voiceId,source);
+        source.start(); source.stop(improved ? end+.01 : ctx.currentTime+.45);
+    }
+}
+class StudioLibrary {
+    constructor(engine) {
+        this.engine = engine;
+        engine.onSoundSetError = error => { this.fail(error);this.render(); };
+        this.busy = false;
+        this.available = false;
+        this.message = 'STANDARD：追加ダウンロード不要';
+        this.progress = 0;
+    }
+    async database() {
+        if (!window.indexedDB) throw new Error('この環境では音源を保存できません');
+        return new Promise((resolve,reject) => {
+            const request = indexedDB.open('chord-toy-studio-basic',1);
+            request.onupgradeneeded = () => request.result.createObjectStore('samples');
+            let blocked=false;
+            request.onsuccess = () => { const db=request.result; if(blocked){db.close();return;} db.onversionchange=()=>db.close(); resolve(db); };
+            request.onerror = () => reject(request.error);
+            request.onblocked = () => { blocked=true;reject(new Error('別のタブの音源操作を終了してください')); };
+        });
+    }
+    async store(mode, action) {
+        const db = await this.database();
+        try {
+            return await new Promise((resolve,reject) => {
+                const tx = db.transaction('samples',mode);
+                let request;
+                try { request = action(tx.objectStore('samples')); } catch(error) { tx.abort(); reject(error); return; }
+                tx.oncomplete = () => resolve(request?.result);
+                tx.onerror = tx.onabort = () => reject(tx.error || new Error('保存処理を完了できませんでした'));
+            });
+        } finally { db.close(); }
+    }
+    key(row) { return STUDIO_MANIFEST.version + '/' + row.id; }
+    async verify(row, data) {
+        if (!(data instanceof ArrayBuffer) || data.byteLength !== row.bytes) throw new Error('保存された音源が不足しています');
+        const header = new TextEncoder().encode('blob '+data.byteLength+'\0');
+        const joined = new Uint8Array(header.length+data.byteLength);
+        joined.set(header); joined.set(new Uint8Array(data),header.length);
+        const hash = [...new Uint8Array(await crypto.subtle.digest('SHA-1',joined))].map(b=>b.toString(16).padStart(2,'0')).join('');
+        if (hash !== row.gitBlob) throw new Error('音源の整合性を確認できませんでした');
+    }
+    async refresh() {
+        if (this.busy) return;
+        try {
+            const keys = new Set(await this.store('readonly',s=>s.getAllKeys()));
+            if (this.busy) return; // An explicit operation takes precedence over a stale availability check.
+            this.available = STUDIO_MANIFEST.samples.every(row=>keys.has(this.key(row)));
+            if (!this.available) {
+                this.engine.soundSet = 'standard';
+                this.engine.studioBank.ready = false;
+                this.engine.studioBank.buffers.clear();
+            }
+            this.message = this.available ? (this.engine.soundSet === 'studio' ? 'STUDIO BASIC：利用中' : 'STUDIO BASIC 保存済み（選択時に読み込み）') : '未インストール・STANDARDで演奏できます';
+        } catch(error) { if (this.busy) return; this.fail(error); }
+        this.render();
+    }
+    fail(error) {
+        this.engine.soundSet = 'standard';
+        this.engine.studioBank.ready = false;
+        this.engine.studioBank.buffers.clear();
+        this.available = false;
+        this.message = 'STANDARDに戻りました。'+(error?.name === 'QuotaExceededError' ? '保存容量が不足しています。空き容量を増やして再試行してください。' : error.message || '音源を読み込めませんでした。再インストールしてください。');
+    }
+    async decode(row,data,target) {
+        await this.verify(row,data);
+        const ctx = this.engine.ctx;
+        const decoded = await ctx.decodeAudioData(data.slice(0));
+        // Bounded resident PCM: original downloads remain unmodified in IndexedDB.
+        // Piano retains its full recorded natural decay; other parts keep their existing 12 s cap.
+        const length = row.instrument === 'piano' ? decoded.length : Math.min(decoded.length,Math.ceil(ctx.sampleRate*12));
+        const buffer = length === decoded.length ? decoded : ctx.createBuffer(decoded.numberOfChannels,length,decoded.sampleRate);
+        if (buffer !== decoded) {
+            for (let ch=0;ch<decoded.numberOfChannels;ch++) {
+                const values=buffer.getChannelData(ch); values.set(decoded.getChannelData(ch).subarray(0,length));
+                const fade=Math.min(length,Math.ceil(ctx.sampleRate*.1));
+                for(let i=0;i<fade;i++) values[length-fade+i] *= 1-i/(fade-1);
+            }
+        }
+        const bytes = [...target.values()].reduce((sum,b)=>sum+b.length*b.numberOfChannels*4,0)+buffer.length*buffer.numberOfChannels*4;
+        if (bytes > 384*1024*1024) throw new Error('この端末の再生用メモリ上限を超えました');
+        target.set(row.id,buffer);
+    }
+    async install() {
+        if (this.busy) return;
+        this.busy=true; this.progress=0; this.message='音源を取得・保存しています'; this.render();
+        try {
+            this.engine.init();
+            if (!this.engine.ctx) throw new Error('Web Audioが利用できません');
+            // Sequential download/decode bounds temporary allocations and allows resumable installation.
+            const buffers=new Map();
+            for (const row of STUDIO_MANIFEST.samples) {
+                let data=await this.store('readonly',s=>s.get(this.key(row)));
+                try { await this.verify(row,data); } catch {
+                    const controller=new AbortController();
+                    const timer=setTimeout(()=>controller.abort(),45000);
+                    try {
+                        const response=await fetch('assets/studio-basic/samples/'+row.id+'.'+row.url.split('.').pop(),{signal:controller.signal,cache:'no-store'});
+                        if (!response.ok) throw new Error('音源の取得に失敗しました（'+response.status+'）');
+                        data=await response.arrayBuffer();
+                    } finally { clearTimeout(timer); }
+                }
+                if (this.engine.studioBank.ready && this.engine.studioBank.buffers.has(row.id)) {
+                    await this.verify(row,data);
+                    buffers.set(row.id,this.engine.studioBank.buffers.get(row.id));
+                } else await this.decode(row,data,buffers);
+                await this.store('readwrite',s=>s.put(data,this.key(row)));
+                this.progress += row.bytes; this.render();
+            }
+            this.engine.studioBank.buffers=buffers; this.engine.studioBank.ready=true;
+            this.available=true;
+            this.message='STUDIO BASICを利用できます。音源選択で比較できます。';
+        } catch(error) { this.fail(error); }
+        finally { this.busy=false;this.render(); }
+    }
+    async select(value) {
+        if (this.busy) { this.render(); return; }
+        if (value !== 'studio') { this.engine.soundSet='standard';this.render();return; }
+        this.busy=true;this.message='保存済み音源を確認・読み込み中（STANDARDで演奏できます）';this.render();
+        try {
+            this.engine.init();
+            if (!this.engine.ctx) throw new Error('Web Audioが利用できません');
+            const buffers=new Map();
+            for (const row of STUDIO_MANIFEST.samples) {
+                const data=await this.store('readonly',s=>s.get(this.key(row)));
+                await this.verify(row,data);
+                if (this.engine.studioBank.ready && this.engine.studioBank.buffers.has(row.id)) buffers.set(row.id,this.engine.studioBank.buffers.get(row.id));
+                else await this.decode(row,data,buffers);
+            }
+            this.engine.studioBank.buffers=buffers; this.engine.studioBank.ready=true;
+            this.engine.soundSet='studio';this.available=true;this.message='STUDIO BASIC：新しい発音から適用';
+        } catch(error) { this.fail(error); }
+        finally { this.busy=false;this.render(); }
+    }
+    async remove() {
+        if (this.busy) return;
+        this.busy=true;this.engine.soundSet='standard';this.render();
+        try {
+            await this.store('readwrite',s=>s.clear());
+            this.available=false;this.engine.studioBank.ready=false;this.engine.studioBank.buffers.clear();
+            this.progress=0;this.message='STUDIO BASICを削除しました。STANDARDで演奏できます。';
+        } catch(error) { this.fail(error); }
+        finally { this.busy=false;this.render(); }
+    }
+    render() {
+        const select=document.getElementById('sound-set'); if (!select) return;
+        select.value=this.engine.soundSet;select.disabled=this.busy;
+        document.getElementById('studio-option').disabled=!this.available;
+        document.getElementById('studio-install').disabled=this.busy;
+        document.getElementById('studio-delete').disabled=this.busy;
+        document.getElementById('studio-status').textContent=this.message;
+        const progress=document.getElementById('studio-progress');
+        progress.max=STUDIO_MANIFEST.bytes;progress.value=this.progress;progress.hidden=!this.busy;
+        document.getElementById('timbre-select').disabled=this.engine.soundSet==='studio';
+    }
+}
+
+// STUDIO BASIC END.
+
 class AudioEngine {
     constructor() {
         this.ctx = null;
@@ -3233,6 +3592,20 @@ class AudioEngine {
         this.groups = new Map();
         this.nextVoiceId = 0;
         this.nextGroupId = 0;
+        this.partOutputs = null;
+        this.soundSet = "standard";
+        this.studioBank = new StudioSampleBank(STUDIO_MANIFEST);
+        this.studioRenderer = new StudioSampleRenderer(this, this.studioBank);
+        this.onSoundSetError = null;
+        this.pianoProfile = "improved";
+        this.manualReleaseSeconds = {...STUDIO_MANUAL_RELEASE_SECONDS};
+    }
+
+    fallbackToStandard(error) {
+        this.soundSet = "standard";
+        this.studioBank.ready = false;
+        this.studioBank.buffers.clear();
+        this.onSoundSetError?.(error);
     }
 
     init() {
@@ -3245,6 +3618,13 @@ class AudioEngine {
         this.master = this.ctx.createGain();
         this.master.gain.value = 0.5;
         this.master.connect(this.ctx.destination);
+        // Independent unity buses preserve STANDARD's established mix exactly.
+        this.partOutputs = Object.fromEntries(["melody", "chord", "bass", "drums"].map(part => {
+            const gain = this.ctx.createGain();
+            gain.gain.value = 1;
+            gain.connect(this.master);
+            return [part, gain];
+        }));
         this.initialized = true;
         state.audioActivated = true;
     }
@@ -3285,7 +3665,7 @@ class AudioEngine {
             throw new Error("Unknown voice owner");
         }
         const groupId = ++this.nextGroupId;
-        this.groups.set(groupId, { groupId, owner, snapshot: Object.freeze({ ...snapshot }),
+        this.groups.set(groupId, { groupId, owner, snapshot: Object.freeze({ soundSet: this.soundSet, pianoProfile: this.pianoProfile, ...snapshot, manualReleaseSeconds: Object.freeze({...this.manualReleaseSeconds}) }),
             held, status: "active", voiceIds: new Set(), pending: new Set() });
         return groupId;
     }
@@ -3325,6 +3705,11 @@ class AudioEngine {
             return;
         }
         const manual = voice.owner === "manual-left" || voice.owner === "manual-right";
+        if (manual && voice.backend === "studio" && ['melody','chord'].includes(voice.part) && voice.pianoProfile !== 'baseline') {
+            this.studioRenderer.releasePiano(voice,now);
+            this.studioRenderer.releaseNoise(voice);
+            return;
+        }
         const releaseSeconds = manual ? 0.45 : 0.18;
         const stopSeconds = manual ? 0.47 : 0.2;
         voice.gains.forEach(node => {
@@ -3339,6 +3724,7 @@ class AudioEngine {
             param.exponentialRampToValueAtTime(0.0001, now + releaseSeconds);
         });
         voice.sources.forEach(source => source.stop(now + stopSeconds));
+        if (voice.backend === "studio") this.studioRenderer.releaseNoise(voice);
     }
 
     releaseVoiceGroup(groupId) {
@@ -3354,6 +3740,8 @@ class AudioEngine {
     cancelVoiceGroup(groupId) { this.releaseVoiceGroup(groupId); }
 
     releaseOwner(owner) {
+        // Cleanup/cancel keeps its short stop, including tails already released by pointer-up.
+        this.voices.forEach(voice=>{if(voice.owner===owner)this.studioRenderer.cancelPiano(voice);});
         [...this.groups.values()].filter(group => group.owner === owner)
             .forEach(group => this.releaseVoiceGroup(group.groupId));
     }
@@ -3374,6 +3762,12 @@ class AudioEngine {
         const mixRole = options.mixRole ?? resolveToneMixRole(group);
         const baseVelocity = volume;
         volume = getMixGain({ mixRole, octave, baseVelocity });
+        if (group.snapshot.soundSet === "studio" && this.studioBank.ready) {
+            try { return this.studioRenderer.tone({note,octave,duration,volume,baseVelocity,mixRole,groupId,held,
+                now: audioTime ?? this.ctx.currentTime}); }
+            catch (error) { this.fallbackToStandard(error); }
+        }
+        const output = this.partOutputs[mixRole.endsWith("bass") ? "bass" : mixRole.endsWith("chord") ? "chord" : "melody"];
         const timbre = overrideTimbre || state.timbre || "piano";
         const now = audioTime ?? this.ctx.currentTime;
         const osc = this.ctx.createOscillator();
@@ -3407,7 +3801,7 @@ class AudioEngine {
             voice.nodes.push(subOsc, subGain);
             subOsc.onended = () => this.endVoiceSource(voiceId, subOsc);
             subOsc.connect(subGain);
-            subGain.connect(this.master);
+            subGain.connect(output);
             subOsc.start(now);
             if (!held) subOsc.stop(now + duration);
 
@@ -3428,7 +3822,7 @@ class AudioEngine {
 
             osc.connect(filter);
             filter.connect(gain);
-            gain.connect(this.master);
+            gain.connect(output);
             osc.start(now);
             if (!held) osc.stop(now + duration * 1.5 + 0.05);
             voice.status = held ? "holding" : "releasing";
@@ -3447,7 +3841,7 @@ class AudioEngine {
 
             osc.connect(filter);
             filter.connect(gain);
-            gain.connect(this.master);
+            gain.connect(output);
             osc.start(now);
             if (!held) osc.stop(now + duration * 0.6 + 0.05);
             voice.status = held ? "holding" : "releasing";
@@ -3455,7 +3849,7 @@ class AudioEngine {
         }
 
         osc.connect(gain);
-        gain.connect(this.master);
+        gain.connect(output);
 
         osc.start(now);
         if (!held) osc.stop(now + duration + 0.05);
@@ -3512,6 +3906,11 @@ class AudioEngine {
     playKick(audioTime = null, options = {}) {
         this.resume();
         if (!this.ctx) return;
+        const soundSet = this.groups.get(options.groupId)?.snapshot.soundSet ?? this.soundSet;
+        if (soundSet === "studio" && this.studioBank.ready) {
+            try { return this.studioRenderer.drum("kick",audioTime ?? this.ctx.currentTime,options); }
+            catch(error) { this.fallbackToStandard(error); }
+        }
         const now = audioTime ?? this.ctx.currentTime;
         const duration = options.duration ?? 0.13;
         const osc = this.ctx.createOscillator();
@@ -3524,7 +3923,7 @@ class AudioEngine {
         gain.gain.exponentialRampToValueAtTime(0.001, now + duration * 12 / 13);
 
         osc.connect(gain);
-        gain.connect(this.master);
+        gain.connect(this.partOutputs.drums);
         this.trackDrum(osc, gain, options.groupId, now);
         osc.start(now);
         osc.stop(now + duration);
@@ -3533,6 +3932,11 @@ class AudioEngine {
     playSnare(audioTime = null, options = {}) {
         this.resume();
         if (!this.ctx) return;
+        const soundSet = this.groups.get(options.groupId)?.snapshot.soundSet ?? this.soundSet;
+        if (soundSet === "studio" && this.studioBank.ready) {
+            try { return this.studioRenderer.drum("snare",audioTime ?? this.ctx.currentTime,options); }
+            catch(error) { this.fallbackToStandard(error); }
+        }
         const now = audioTime ?? this.ctx.currentTime;
         const duration = options.duration ?? 0.1;
         const bufferSize = Math.floor(this.ctx.sampleRate * duration);
@@ -3551,7 +3955,7 @@ class AudioEngine {
         gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
 
         source.connect(gain);
-        gain.connect(this.master);
+        gain.connect(this.partOutputs.drums);
         this.trackDrum(source, gain, options.groupId, now);
         source.start(now);
     }
@@ -3559,6 +3963,11 @@ class AudioEngine {
     playHat(audioTime = null, options = {}) {
         this.resume();
         if (!this.ctx) return;
+        const soundSet = this.groups.get(options.groupId)?.snapshot.soundSet ?? this.soundSet;
+        if (soundSet === "studio" && this.studioBank.ready) {
+            try { return this.studioRenderer.drum("hat",audioTime ?? this.ctx.currentTime,options); }
+            catch(error) { this.fallbackToStandard(error); }
+        }
         const now = audioTime ?? this.ctx.currentTime;
         const duration = options.duration ?? 0.03;
         const bufferSize = Math.floor(this.ctx.sampleRate * duration);
@@ -3577,7 +3986,7 @@ class AudioEngine {
         gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
 
         source.connect(gain);
-        gain.connect(this.master);
+        gain.connect(this.partOutputs.drums);
         this.trackDrum(source, gain, options.groupId, now);
         source.start(now);
     }
@@ -3585,6 +3994,11 @@ class AudioEngine {
     playClap(audioTime = null, options = {}) {
         this.resume();
         if (!this.ctx) return;
+        const soundSet = this.groups.get(options.groupId)?.snapshot.soundSet ?? this.soundSet;
+        if (soundSet === "studio" && this.studioBank.ready) {
+            try { return this.studioRenderer.drum("clap",audioTime ?? this.ctx.currentTime,options); }
+            catch(error) { this.fallbackToStandard(error); }
+        }
         const now = audioTime ?? this.ctx.currentTime;
         const duration = options.duration ?? 0.08;
         const bufferSize = Math.floor(this.ctx.sampleRate * duration);
@@ -3603,7 +4017,7 @@ class AudioEngine {
         gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
 
         source.connect(gain);
-        gain.connect(this.master);
+        gain.connect(this.partOutputs.drums);
         this.trackDrum(source, gain, options.groupId, now);
         source.start(now);
     }
@@ -3632,7 +4046,7 @@ class AudioEngine {
                         else param.cancelScheduledValues(fadeStart);
                         // An explicit plateau anchor prevents the final exponential ramp
                         // from starting at the earlier decay endpoint instead of fadeStart.
-                        param.setValueAtTime(voice.mixedVelocity * (gainIndex === 1 ? 0.04 : 0.12),fadeStart);
+                        param.setValueAtTime(voice.mixedVelocity * (voice.backend === "studio" ? 1 : gainIndex === 1 ? 0.04 : 0.12),fadeStart);
                         param.exponentialRampToValueAtTime(0.0001,endTime);
                     });
                     voice.sources.forEach(source=>source.stop(endTime + 0.02));
@@ -3655,7 +4069,99 @@ class AudioEngine {
 
 }
 
+// Piano audition owns only its own output; it does not drive Harmony Timeline or the scheduler.
+class PianoComparison {
+    constructor(engine) { this.engine=engine;this.generation=0;this.playing=null;this.last=null; }
+    stop() {
+        this.generation++;
+        if (!this.playing) return;
+        const {source,gain}=this.playing, now=this.engine.ctx.currentTime;
+        gain.gain.cancelScheduledValues(now);gain.gain.setValueAtTime(gain.gain.value,now);
+        gain.gain.linearRampToValueAtTime(0,now+.02);source.stop(now+.025);this.playing=null;
+    }
+    async render(profile,midi,velocity,releaseSeconds,part='melody') {
+        if (!['melody','chord'].includes(part)) throw new Error('Unknown comparison part');
+        const ctx=new OfflineAudioContext(2,48000*6,48000);
+        const e=new AudioEngine();e.ctx=ctx;e.initialized=true;e.resume=()=>{};
+        e.master=ctx.createGain();e.master.gain.value=.5;e.master.connect(ctx.destination);
+        e.partOutputs=Object.fromEntries(['melody','chord','bass','drums'].map(part=>{
+            const gain=ctx.createGain();gain.gain.value=1;gain.connect(e.master);return[part,gain];
+        }));
+        e.soundSet='studio';e.pianoProfile=profile;e.manualReleaseSeconds[part]=releaseSeconds;
+        e.studioBank.buffers=this.engine.studioBank.buffers;e.studioBank.ready=true;
+        const note=NOTE_NAMES[midi%12],octave=Math.floor(midi/12)-1;
+        let sample;
+        if (profile==='source') {
+            sample=e.studioBank.select('piano',midi,Math.min(1,velocity/.45));
+            const source=ctx.createBufferSource(),gain=ctx.createGain();
+            source.buffer=sample.buffer;source.playbackRate.value=sample.rate;
+            gain.gain.value=getMixGain({mixRole:'manual-'+part,octave,baseVelocity:velocity})*STUDIO_PARTS[part].gain;
+            gain.gain.setValueAtTime(gain.gain.value,5.95);gain.gain.linearRampToValueAtTime(0,6);
+            source.connect(gain);gain.connect(e.master);source.start(0);
+            return {buffer:await ctx.startRendering(),sample:sample.row.id,rate:sample.rate};
+        }
+        const group=e.createVoiceGroup(part==='chord'?'manual-left':'manual-right',{},true);
+        const id=e.startTone(note,octave,.8,null,velocity,group,true,0);
+        const voice=e.voices.get(id);sample={id:voice.sampleId,rate:voice.playbackRate};
+        const suspended=ctx.suspend(.6),rendering=ctx.startRendering();
+        await suspended;e.releaseVoiceGroup(group);await ctx.resume();
+        return {buffer:await rendering,sample:sample.id,rate:sample.rate};
+    }
+    async play(profile) {
+        this.stop();const ticket=this.generation;
+        const status=document.getElementById('piano-comparison-status');
+        if (!this.engine.studioBank.ready) {status.textContent='改善版STUDIOをインストールし、一度選択してから試聴してください。';return;}
+        const midi=Number(document.getElementById('piano-comparison-note').value);
+        const velocity=Number(document.getElementById('piano-comparison-velocity').value);
+        const part=document.getElementById('piano-comparison-part').value;
+        const releaseSeconds=this.engine.manualReleaseSeconds[part];
+        status.textContent='比較音を準備しています…';
+        try {
+            await this.engine.userActivate();
+            const rendered=await this.render(profile,midi,velocity,releaseSeconds,part);
+            if (ticket!==this.generation) return;
+            const {buffer}=rendered;let sum=0,peak=0;
+            for(let ch=0;ch<buffer.numberOfChannels;ch++){
+                const a=buffer.getChannelData(ch);
+                for(let i=0;i<a.length;i++)peak=Math.max(peak,Math.abs(a[i]));
+                for(let i=4800;i<24000;i++)sum+=a[i]*a[i];
+            }
+            const rms=Math.sqrt(sum/(19200*buffer.numberOfChannels));
+            const matched=document.getElementById('piano-comparison-match').checked;
+            const level=matched && rms>0 ? Math.min(.025/rms,.8/Math.max(peak,.0001)) : 1;
+            const source=this.engine.ctx.createBufferSource(),gain=this.engine.ctx.createGain();
+            source.buffer=buffer;gain.gain.value=level;source.connect(gain);gain.connect(this.engine.ctx.destination);
+            const record={source,gain};this.playing=record;
+            source.onended=()=>{source.disconnect();gain.disconnect();if(this.playing===record)this.playing=null;};
+            source.start();this.last={profile,part,midi,velocity,releaseSeconds,sample:rendered.sample,rate:rendered.rate,rms,peak,level};
+            const label={baseline:'旧版（Release 0.45秒）',improved:'改善版（Release '+releaseSeconds+'秒）',source:'元サンプル（離鍵なし・6秒まで）'}[profile];
+            status.textContent=(part==='chord'?'左手 Chord':'右手 Melody')+'／'+label+'／'+(matched?'音量合わせON':'同じGain')+'／基準音から '+(12*Math.log2(rendered.rate)).toFixed(1)+' 半音';
+        } catch(error) { if(ticket===this.generation)status.textContent='比較音を再生できませんでした：'+error.message; }
+    }
+}
+function changePianoProfile() {
+    audio.pianoProfile=document.getElementById('piano-profile').value;
+    for (const part of ['melody','chord']) document.getElementById('piano-release-'+part).disabled=audio.pianoProfile==='baseline';
+}
+function changePianoRelease(part) {
+    if (!Object.hasOwn(STUDIO_MANUAL_RELEASE_SECONDS,part)) return;
+    const value=Number(document.getElementById('piano-release-'+part).value);
+    if ([.45,1.2,2,3].includes(value))audio.manualReleaseSeconds[part]=value;
+}
+
 const audio = new AudioEngine();
+const studioLibrary = new StudioLibrary(audio);
+const pianoComparison = new PianoComparison(audio);
+// Cancellation is distinct from an ordinary finger release; pointer ownership is unchanged.
+document.addEventListener('pointercancel', event => {
+    const group=audio.groups.get(manualPointers.get(event.pointerId)?.groupId);
+    group?.voiceIds.forEach(id=>audio.studioRenderer.cancelPiano(audio.voices.get(id)));
+}, {capture:true});
+document.addEventListener('visibilitychange',()=>{if(document.hidden)pianoComparison.stop();});
+// Checking local availability never downloads audio or creates an AudioContext.
+window.addEventListener("load", () => studioLibrary.refresh());
+window.addEventListener("focus", () => studioLibrary.refresh());
+document.addEventListener("visibilitychange", () => { if (!document.hidden) studioLibrary.refresh(); });
 
 // R6 BEGIN: compatibility patterns, pure events, Audio-clock scheduler and style state.
 // These are engine timings, not genre-specific musical parameters.
