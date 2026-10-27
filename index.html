@@ -508,15 +508,56 @@ body button:disabled { opacity: 0.4; }
 .studio-controls { font-size: 12px; }
 .studio-controls p { margin: 8px 0; color: var(--ui-text-secondary); line-height: 1.6; }
 .studio-actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0; }
-.studio-controls button, .studio-controls select, .studio-controls summary { min-height: 44px; padding: 10px; color: var(--ui-text-primary); background: var(--ui-surface); border: 1px solid var(--ui-divider); border-radius: 6px; }
+.studio-controls button, .studio-controls select, .studio-controls summary, #kick-bpm { min-height: 44px; padding: 10px; color: var(--ui-text-primary); background: var(--ui-surface); border: 1px solid var(--ui-divider); border-radius: 6px; }
 .studio-controls select { color-scheme: dark; }
 .studio-controls button:disabled, .studio-controls select:disabled { opacity: .5; }
 .studio-controls progress { width: 100%; accent-color: var(--ui-text-primary); }
 .studio-controls a { text-decoration: underline; }
-#piano-quality-controls { margin: 12px 0; }
-#piano-quality-controls > label, #piano-quality-controls > select { display: block; width: 100%; margin: 8px 0; }
-#piano-quality-controls .piano-match { display: flex; align-items: center; gap: 10px; min-height: 44px; }
-#piano-quality-controls input { accent-color: var(--ui-text-primary); }
+#piano-quality-controls, #kick-comparison-controls { margin: 12px 0; }
+#piano-quality-controls > label, #piano-quality-controls > select, #kick-comparison-controls > label, #kick-comparison-controls > select { display: block; width: 100%; margin: 8px 0; }
+#piano-quality-controls .piano-match, #kick-comparison-controls .piano-match { display: flex; align-items: center; gap: 10px; min-height: 44px; }
+#piano-quality-controls input, #kick-comparison-controls input { accent-color: var(--ui-text-primary); }
+/* Experience Phase 1: presentation tuning only. */
+@media (max-width: 899px), (orientation: portrait) {
+    /* Growing contextual Quality/Slash controls cannot move either keyboard. */
+    .lh-section { display: contents; }
+    .lh-section > .keyboard-heading { grid-row: 1; margin-bottom: 0; }
+    .lh-keyboard-area { grid-row: 2; }
+    .rh-section { grid-row: 3; }
+    .quality-controls { grid-row: 4; }
+    .keyboard-layout { row-gap: 12px; }
+}
+:root { --halo-opacity: .5; --future-halo-weight: 1.6; --future-halo-spread: 1.12; --future-halo-floor: .32; }
+.future-marker-halo {
+    border-width: calc(var(--halo-border-width, 1.333333px) * var(--future-halo-weight));
+    transform: scale(calc(var(--halo-scale, 1.28) * var(--future-halo-spread)));
+    opacity: max(var(--future-halo-floor), var(--halo-opacity, .5)) !important;
+    outline: 1px solid var(--music-marker-edge);
+}
+@media (prefers-reduced-motion: reduce) {
+    .future-marker-halo { transform: scale(1.12); border-width: 2px; box-shadow: none; }
+}
+.harmony-card { height: 62px; grid-template-columns: minmax(0, 1fr) auto; grid-template-rows: 14px 44px; justify-content: stretch; }
+#current-chord, #next-chord { min-width: 0; max-width: 100%; height: 44px; line-height: 44px; white-space: nowrap; overflow-wrap: normal; overflow-x: auto; overflow-y: hidden; scrollbar-width: thin; }
+#current-chord { font-size: clamp(24px, 2.7vw, 34px); }
+#next-chord { font-size: clamp(18px, 2vw, 25px); }
+.explorer-path .explorer-item[aria-current="true"] { background: transparent; box-shadow: none; border-color: transparent; text-decoration: underline; text-underline-offset: 5px; }
+.discovery-actions { max-width: 1248px; margin: auto; display: flex; align-items: center; gap: 12px; border-top: 1px solid var(--ui-divider); padding-top: 4px; }
+.discovery-actions button { min-height: 44px; color: var(--ui-text-secondary); font-size: 11px; text-align: left; }
+#sound-library-entry { flex: 1; }
+#help-open { flex: none; padding: 0 8px; }
+#studio-delete { border-color: transparent; color: var(--ui-text-secondary); }
+#quick-guide { width: min(560px, calc(100% - 24px)); max-height: calc(100dvh - 32px); margin: auto; padding: 20px; background: var(--ui-background); color: var(--ui-text-primary); border: 1px solid var(--ui-divider); border-radius: 12px; overflow-y: auto; font-size: 14px; line-height: 1.7; }
+#quick-guide::backdrop { background: #0009; }
+#quick-guide h2 { font-size: 20px; font-weight: 700; }
+#quick-guide h3 { font-weight: 700; margin-top: 14px; }
+#quick-guide ol { list-style: decimal; padding-left: 22px; }
+#quick-guide button { min-height: 44px; padding: 8px 14px; border: 1px solid var(--ui-divider); border-radius: 6px; }
+.guide-heading { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+#quick-guide a { text-decoration: underline; }
+#studio-level-controls { margin-top: 16px; border-top: 1px solid var(--ui-divider); padding-top: 12px; }
+#studio-level-controls h4 { font-weight: 700; }
+#studio-level-controls select { display: block; width: 100%; margin: 8px 0; }
 </style>
 </head>
 
@@ -541,6 +582,10 @@ body button:disabled { opacity: 0.4; }
                 </button></div>
         <button id="settings-toggle" type="button" onclick="openSettingsSheet(this)" aria-controls="settings-sheet" aria-expanded="false">プリセット</button>
     </div>
+<nav class="discovery-actions" aria-label="音源と使い方">
+<button id="sound-library-entry" type="button" onclick="openSoundLibrary(this)">STANDARD 使用中 · STUDIO BASIC 高品質ピアノ・ベース・ドラム 約110MBを導入</button>
+<button id="help-open" type="button" onclick="document.getElementById('quick-guide').showModal()">使い方</button>
+</nav>
 </header>
 
 <main class="performance-main">
@@ -550,7 +595,7 @@ body button:disabled { opacity: 0.4; }
         <div class="harmony-pair">
             <div class="harmony-card current-card">
                 <div class="text-[9px] music-current-text font-bold">CURRENT</div>
-                <div id="current-chord" class="text-3xl font-black music-current-text font-mono">C</div>
+                <div id="current-chord" tabindex="0" aria-label="現在のコード（長い場合は横にスクロール）" class="text-3xl font-black music-current-text font-mono">C</div>
                 <div id="current-function" class="text-[10px] text-slate-500 font-mono">T</div>
             </div>
 
@@ -558,7 +603,7 @@ body button:disabled { opacity: 0.4; }
 
             <div class="harmony-card next-card">
                 <div class="text-[9px] music-future-text font-bold">NEXT</div>
-                <div id="next-chord" class="text-2xl font-black music-future-text font-mono">G</div>
+                <div id="next-chord" tabindex="0" aria-label="次のコード（長い場合は横にスクロール）" class="text-2xl font-black music-future-text font-mono">G</div>
                 <div id="next-function" class="text-[10px] text-slate-500 font-mono">D</div>
             </div>
         </div>
@@ -634,7 +679,21 @@ body button:disabled { opacity: 0.4; }
 
 
 
+
 </main>
+<dialog id="quick-guide" aria-labelledby="quick-guide-title">
+<div class="guide-heading"><h2 id="quick-guide-title">Chord Toyの楽しみ方</h2><form method="dialog"><button>閉じる</button></form></div>
+<p>コード進行に合わせて、自由にメロディを弾ける音楽のおもちゃ。音楽理論を知らなくても楽しめます。</p>
+<h3>まずは弾いてみよう</h3>
+<ol><li>プリセットでジャンルや雰囲気から好きな進行を選ぶ。</li><li>再生してドラム・ベース・コードの伴奏を聴く。</li><li>右手の鍵盤で自由にメロディを弾く。</li><li>左手の鍵盤でコードも変えてみる。</li></ol>
+<h3>色は音のつながりのヒント</h3>
+<p>濃いAmberの鍵盤は今のコードに合う音、淡いAmberはスケール内の音。Greenの丸は次のコードへの着地点、淡いGreenの丸はそこにつながる音。色のない音も自由に弾けます。</p>
+<h3>高品質な音で楽しむ</h3>
+<p>STUDIO BASICを約110MBの追加ダウンロードで導入すると、高品質なピアノ・ベース・ドラムで演奏できます。STANDARDは追加ダウンロード不要です。</p>
+<h3>ホーム画面から開く</h3>
+<p>iPhone・iPadのSafariで共有メニューを開き、「ホーム画面に追加」→「追加」。OSやブラウザによりメニューの位置・表示は異なります。<a href="https://support.apple.com/ja-jp/guide/iphone/iphea86e5236/ios" target="_blank" rel="noopener">Appleの手順</a></p>
+<p>ホーム画面への追加とSTUDIO音源の保存は別です。音源はこのブラウザに保存され、サイトデータの削除などで消える場合があります。</p>
+</dialog>
 
 <!-- R7-4 SHEET BEGIN: existing controls retain IDs and handlers. -->
 <div id="settings-backdrop" class="settings-backdrop" data-open="false" aria-hidden="true" onclick="closeSettingsSheet()"></div>
@@ -652,11 +711,12 @@ body button:disabled { opacity: 0.4; }
             </select><button id="sound-button" aria-pressed="false" onclick="audio.userActivate()" class="px-3 py-1.5 rounded-lg text-xs font-bold text-white transition shadow-sm">
                 🔊 音声ON
             </button></div></section>
-  <section class="sheet-group studio-controls"><h3>STUDIO BASIC</h3>
+  <section id="sound-library" class="sheet-group studio-controls"><h3>STUDIO BASIC</h3>
+   <p id="studio-heading" role="status">STANDARD 使用中</p>
    <label for="sound-set">音源セット</label>
    <select id="sound-set" onchange="studioLibrary.select(this.value)"><option value="standard">STANDARD</option><option id="studio-option" value="studio" disabled>STUDIO BASIC</option></select>
    <p>Grand Piano / Acoustic Bass / Acoustic Drums</p>
-   <div class="studio-actions"><button id="studio-install" type="button" onclick="studioLibrary.install()">インストール（約110 MB）</button><button id="studio-delete" type="button" onclick="studioLibrary.remove()">音源を削除</button></div>
+   <div class="studio-actions"><button id="studio-switch" type="button" hidden onclick="studioLibrary.select('studio')">STUDIOに切り替える</button><button id="studio-install" type="button" onclick="studioLibrary.install()">インストール（約110 MB）</button><button id="studio-delete" type="button" onclick="studioLibrary.remove()">音源を削除</button></div>
    <progress id="studio-progress" aria-label="音源インストール進捗" hidden></progress>
    <p id="studio-status" role="status" aria-live="polite">STANDARD：追加ダウンロード不要</p>
    <p>保存は端末・ブラウザごとです。消去された場合は再インストールできます。STUDIOでは音色が固定されます。</p>
@@ -666,11 +726,36 @@ body button:disabled { opacity: 0.4; }
     <label for="piano-release-chord">左手 Chord Release</label><select id="piano-release-chord" onchange="changePianoRelease('chord')"><option value="0.45">0.45秒</option><option value="1.2" selected>1.2秒（標準）</option><option value="2">2.0秒</option><option value="3">3.0秒</option></select>
     <p>新しく押した手動のSTUDIOピアノに適用。自動伴奏・STANDARDは変わりません。</p>
     <label for="piano-comparison-part">比較するパート（単音）</label><select id="piano-comparison-part"><option value="melody">右手 Melody</option><option value="chord">左手 Chord</option></select>
-    <label for="piano-comparison-note">比較音</label><select id="piano-comparison-note"><option value="36">C2</option><option value="48" selected>C3</option><option value="60">C4</option><option value="64">E4</option><option value="67">G4</option><option value="72">C5</option><option value="76">E5</option><option value="79">G5</option><option value="84">C6</option></select>
-    <label for="piano-comparison-velocity">Velocity（全比較共通）</label><select id="piano-comparison-velocity"><option value="0.1">弱：0.10</option><option value="0.2">中：0.20</option><option value="0.3" selected>通常：0.30</option><option value="0.4">強：0.40</option></select>
+    <label for="piano-comparison-note">比較音</label><select id="piano-comparison-note"><option value="36">C2</option><option value="48" selected>C3</option><option value="52">E3</option><option value="55">G3</option><option value="60">C4</option><option value="64">E4</option><option value="67">G4</option><option value="72">C5</option><option value="76">E5</option><option value="79">G5</option><option value="84">C6</option></select>
+    <label for="piano-comparison-velocity">Velocity（全比較共通）</label><select id="piano-comparison-velocity"><option value="0.1">弱：0.10</option><option value="0.2">中：0.20</option><option value="0.3" selected>通常：0.30</option><option value="0.4">強：0.40</option><option value="0.11249">弱→中の直前：0.11249</option><option value="0.1125">弱→中の直後：0.11250</option><option value="0.33749">中→強の直前：0.33749</option><option value="0.3375">中→強の直後：0.33750</option></select>
     <label class="piano-match"><input id="piano-comparison-match" type="checkbox" checked>音量を揃える（比較ボタンのみ）</label>
     <div class="studio-actions"><button type="button" onclick="pianoComparison.play('baseline')">旧版を聴く</button><button type="button" onclick="pianoComparison.play('improved')">改善版を聴く</button><button type="button" onclick="pianoComparison.play('source')">元サンプルを聴く</button><button type="button" onclick="pianoComparison.stop()">比較音を停止</button></div>
     <p id="piano-comparison-status" role="status">同じ音高・Velocityで比較。旧版／改善版は0.6秒で離鍵、元サンプルは離鍵処理なし。</p>
+    <div id="studio-level-controls">
+     <h4>STANDARD／STUDIO 音量比較</h4>
+     <p>通常演奏は現行のままです。調整案Aは音色処理を加えず、Melody・Chord +6dB／Bass +9dB／Drums +3dB。正式採用前の比較です。</p>
+     <label for="studio-level-scene">比較する演奏</label>
+     <select id="studio-level-scene"><option value="melody">Melody単音（上の音高・Velocity）</option><option value="chord">左手 Cmaj7・4音</option><option value="bass">Bass C</option><option value="drums">Drums・2小節</option><option value="full">伴奏全体・2小節</option><option value="fullMelody">伴奏＋右手メロディ</option><option value="fullChord">伴奏＋左手5音コード</option><option value="tap">短いタップ・24音</option><option value="overlap">左右同時・6音コードの余韻</option></select>
+     <p>単音以外は共通の固定条件。伴奏は90 BPM／8 Beat Pop／Cmaj7→Fmaj7、KickはORIGINAL。比較は最大12秒で、現在のプリセットや再生位置は変更しません。聴き比べるときは通常の伴奏を止めてください。</p>
+     <label class="piano-match"><input id="studio-level-match" type="checkbox" checked>音量合わせON（比較のみ・聴感の近似）</label>
+     <div class="studio-actions"><button type="button" onclick="studioLevelComparison.play('current')">現行STUDIO</button><button type="button" onclick="studioLevelComparison.play('candidate')">調整案A STUDIO</button><button type="button" onclick="studioLevelComparison.play('standard')">STANDARD</button><button type="button" onclick="studioLevelComparison.stop()">音量比較を停止</button></div>
+     <p id="studio-level-status" role="status">ONで音色、OFFで演奏音量の差を比較できます。弱・中・強の3層と左右のReleaseは維持します。</p>
+    </div>
+   </details>
+   <details id="kick-comparison-controls"><summary>Kick比較</summary>
+    <label for="kick-profile">伴奏で使うKick（試聴候補）</label>
+    <select id="kick-profile" onchange="audio.setKickProfile(this.value)">
+     <option value="original">ORIGINAL — 現行</option><option value="softDeep">SOFT DEEP — A+B</option><option value="softWarm">SOFT WARM — A+E</option><option value="deepWarm">DEEP WARM — A+B+E</option>
+    </select>
+    <p>伴奏を再開せず、次に鳴るSTUDIOのKickから適用。鳴っている音と他の楽器はそのままです。初期値はORIGINAL。正式採用前の比較です。</p>
+    <label for="kick-velocity">比較の強さ（4候補共通）</label>
+    <select id="kick-velocity"><option value="0.18">弱打</option><option value="0.30" selected>中程度</option><option value="0.45">強打</option></select>
+    <p>録音は弱打・強打の2種類です。中程度は強打サンプルを小さく再生します。</p>
+    <label for="kick-pattern">単音・余韻の試聴</label><select id="kick-pattern"><option value="single">単音</option><option value="slow">遅い4拍子</option><option value="eight">8ビートのKick</option><option value="sixteen">16ビートのKick</option><option value="hiphop">Hip-HopのKick</option><option value="repeat">16分の連続Kick</option></select>
+    <label for="kick-bpm">比較用BPM（伴奏のBPMは変わりません）</label><input id="kick-bpm" type="number" min="40" max="180" step="1" value="80" style="min-height:44px;width:100%">
+    <label class="piano-match"><input id="kick-match" type="checkbox" checked>音量を揃える（比較ボタンのみ・聴感の近似）</label>
+    <div class="studio-actions"><button type="button" onclick="kickComparison.play('original')">ORIGINAL：Kickを鳴らす</button><button type="button" onclick="kickComparison.play('softDeep')">SOFT DEEP：Kickを鳴らす</button><button type="button" onclick="kickComparison.play('softWarm')">SOFT WARM：Kickを鳴らす</button><button type="button" onclick="kickComparison.play('deepWarm')">DEEP WARM：Kickを鳴らす</button><button type="button" onclick="kickComparison.stop()">Kick比較を停止</button></div>
+    <p id="kick-comparison-status" role="status">STUDIOを選択後に試聴できます。連続試聴はKickだけを2小節再生。伴奏内の比較は、Kickのあるプリセット／リズムを再生し、上の候補を切り替えてください。</p>
    </details>
    <details><summary>音源クレジット</summary><p>Salamander Grand Piano — Alexander Holm / <a href="https://github.com/sfzinstruments/SalamanderGrandPiano">配布元</a> / <a href="https://creativecommons.org/licenses/by/3.0/">CC BY 3.0</a>。抜粋。改善版ピアノは元の自然減衰を保持。</p><p>VSCO 2 CE / VCSL — Versilian Studios・Sam Gossner / <a href="https://github.com/sgossner/VSCO-2-CE">Bass</a> / <a href="https://github.com/sgossner/VCSL">Drums</a> / CC0。</p></details>
   </section>
@@ -3295,6 +3380,16 @@ const STUDIO_PARTS = Object.freeze({
 });
 // Manual performance defaults; future sound sets can supply their own part map.
 const STUDIO_MANUAL_RELEASE_SECONDS = Object.freeze({melody:.45,chord:1.2});
+// Audition profiles v1: parameters derived from the pinned VCSL kick, not new samples/genres.
+const KICK_PROFILES = Object.freeze(Object.fromEntries(Object.entries({
+    original: {label:'ORIGINAL — 現行',attack:.002,tailStart:null,tailEnd:null,filters:[]},
+    softDeep: {label:'SOFT DEEP — A+B',attack:.008,tailStart:.12,tailEnd:.65,
+        filters:[['highshelf',750,.707,-5],['peaking',68,.8,2.5],['peaking',180,.8,-3]]},
+    softWarm: {label:'SOFT WARM — A+E',attack:.012,tailStart:.08,tailEnd:.38,
+        filters:[['highshelf',500,.707,-7],['lowshelf',65,.707,-2.5],['peaking',145,.8,1.5]]},
+    deepWarm: {label:'DEEP WARM — A+B+E',attack:.010,tailStart:.14,tailEnd:.72,
+        filters:[['highshelf',500,.707,-6],['peaking',75,.9,2.5],['peaking',155,.8,1],['peaking',260,.8,-2]]}
+}).map(([id,p])=>[id,Object.freeze({...p,filters:Object.freeze(p.filters.map(f=>Object.freeze(f)))})])));
 class StudioPartBackend {
     constructor(bank, definition) { this.bank=bank;this.definition=definition; }
     select(midi,velocity,articulation=null,profile='improved') {
@@ -3332,7 +3427,7 @@ class StudioSampleRenderer {
         const volume = options.velocity ?? nominal;
         const selected = this.backends.drums.select(0,Math.min(1,volume/nominal),instrument);
         const groupId = options.groupId ?? this.engine.createVoiceGroup('drums');
-        const id = this.start(selected,{part:'drums',groupId,held:false,now,volume,duration:selected.buffer.duration,baseVelocity:volume});
+        const id = this.start(selected,{part:'drums',instrument,groupId,held:false,now,volume,duration:selected.buffer.duration,baseVelocity:volume});
         this.engine.finishVoiceGroup(groupId);
         return id;
     }
@@ -3349,13 +3444,14 @@ class StudioSampleRenderer {
             startTime:spec.now,status:spec.held?'holding':'releasing',sources:[source],gains:[gain],nodes:[source,gain],
             backend:'studio',part:spec.part,midi:spec.midi,
             pianoProfile:spec.pianoProfile ?? e.pianoProfile,pianoReleaseSeconds:spec.pianoReleaseSeconds ?? e.manualReleaseSeconds[spec.part],
-            sampleId:selected.row.id,playbackRate:selected.rate};
+            sampleId:selected.row.id,playbackRate:selected.rate,instrument:spec.instrument};
         e.voices.set(voiceId,voice); group.voiceIds.add(voiceId);
         source.onended = () => e.endVoiceSource(voiceId,source);
         gain.gain.setValueAtTime(0,spec.now);
         gain.gain.linearRampToValueAtTime(spec.volume,spec.now+.002);
         const naturalEnd = spec.now+selected.buffer.duration/selected.rate;
         source.start(spec.now);
+        if(spec.instrument==='kick')this.configureKick(voice,e.kickProfile);
         if (spec.held && ['melody','chord'].includes(spec.part) && voice.pianoProfile === 'baseline' && selected.buffer.duration > 12) {
             voice.legacyFadeStart=spec.now+11.9/selected.rate;voice.legacyEnd=spec.now+12/selected.rate;
             gain.gain.setValueAtTime(spec.volume,voice.legacyFadeStart);
@@ -3369,6 +3465,35 @@ class StudioSampleRenderer {
             source.stop(end+.01);
         }
         return voiceId;
+    }
+    configureKick(voice, profile) {
+        const p=KICK_PROFILES[profile],ctx=this.engine.ctx,source=voice.sources[0],gain=voice.gains[0];
+        if(!p||voice.instrument!=='kick')return;
+        const replacing=!!voice.kickProfile;
+        if(replacing){
+            source.disconnect();
+            for(const node of voice.kickNodes||[]){node.disconnect();voice.nodes.splice(voice.nodes.indexOf(node),1);}
+            source.connect(gain);
+        }
+        voice.kickProfile=profile;voice.kickNodes=[];
+        const naturalEnd=voice.startTime+source.buffer.duration/source.playbackRate.value;
+        if(profile==='original'){
+            // Fresh ORIGINAL traverses precisely the legacy graph/envelope/natural duration.
+            if(replacing)source.stop(naturalEnd);
+            return;
+        }
+        source.disconnect();let last=source;
+        for(const [type,hz,q,db] of p.filters){
+            const filter=ctx.createBiquadFilter();filter.type=type;filter.frequency.value=hz;filter.Q.value=q;filter.gain.value=db;
+            last.connect(filter);last=filter;voice.kickNodes.push(filter);
+        }
+        const contour=ctx.createGain(),start=voice.startTime,end=Math.min(naturalEnd,start+p.tailEnd);
+        contour.gain.setValueAtTime(0,start);
+        contour.gain.linearRampToValueAtTime(1,start+p.attack);
+        const fade=Math.min(start+p.tailStart,end);contour.gain.setValueAtTime(1,fade);
+        for(let i=1;i<=64;i++)contour.gain.linearRampToValueAtTime(.5+.5*Math.cos(Math.PI*i/64),fade+(end-fade)*i/64);
+        last.connect(contour);contour.connect(gain);voice.kickNodes.push(contour);voice.nodes.push(...voice.kickNodes);
+        source.stop(end+.01);
     }
     pianoGainAt(voice, time) {
         let value = voice.mixedVelocity * Math.max(0, Math.min(1,(time-voice.startTime)/.002));
@@ -3432,6 +3557,16 @@ class StudioLibrary {
         this.available = false;
         this.message = 'STANDARD：追加ダウンロード不要';
         this.progress = 0;
+        this.selectionRevision = 0;
+        this.restored = false;
+        this.failed = false;
+        this.loading = false;
+        this.preference = null;
+        try { this.preference = localStorage.getItem('chord-toy-sound-set'); } catch {}
+    }
+    remember(value) {
+        this.preference = value;
+        try { localStorage.setItem('chord-toy-sound-set', value); } catch {}
     }
     async database() {
         if (!window.indexedDB) throw new Error('この環境では音源を保存できません');
@@ -3467,20 +3602,26 @@ class StudioLibrary {
     }
     async refresh() {
         if (this.busy) return;
+        const revision = this.selectionRevision;
         try {
             const keys = new Set(await this.store('readonly',s=>s.getAllKeys()));
-            if (this.busy) return; // An explicit operation takes precedence over a stale availability check.
-            this.available = STUDIO_MANIFEST.samples.every(row=>keys.has(this.key(row)));
+            if (this.busy || revision !== this.selectionRevision) return; // An explicit operation takes precedence over a stale availability check.
+            this.available = !this.failed && STUDIO_MANIFEST.samples.every(row=>keys.has(this.key(row)));
             if (!this.available) {
                 this.engine.soundSet = 'standard';
                 this.engine.studioBank.ready = false;
                 this.engine.studioBank.buffers.clear();
             }
-            this.message = this.available ? (this.engine.soundSet === 'studio' ? 'STUDIO BASIC：利用中' : 'STUDIO BASIC 保存済み（選択時に読み込み）') : '未インストール・STANDARDで演奏できます';
-        } catch(error) { if (this.busy) return; this.fail(error); }
+            if (!this.failed) this.message = this.available ? (this.engine.soundSet === 'studio' ? 'STUDIO BASIC：利用中' : 'STUDIO BASIC 保存済み（選択時に読み込み）') : '未インストール・STANDARDで演奏できます';
+            if (!this.restored) {
+                this.restored = true;
+                if (this.available && this.preference !== 'standard') { await this.select('studio', false); return; }
+            }
+        } catch(error) { if (this.busy || revision !== this.selectionRevision) return; this.restored = true; this.fail(error); }
         this.render();
     }
     fail(error) {
+        this.failed = true;
         this.engine.soundSet = 'standard';
         this.engine.studioBank.ready = false;
         this.engine.studioBank.buffers.clear();
@@ -3533,14 +3674,18 @@ class StudioLibrary {
                 this.progress += row.bytes; this.render();
             }
             this.engine.studioBank.buffers=buffers; this.engine.studioBank.ready=true;
-            this.available=true;
+            this.available=true;this.failed=false;
             this.message='STUDIO BASICを利用できます。音源選択で比較できます。';
         } catch(error) { this.fail(error); }
         finally { this.busy=false;this.render(); }
     }
-    async select(value) {
-        if (this.busy) { this.render(); return; }
-        if (value !== 'studio') { this.engine.soundSet='standard';this.render();return; }
+    async select(value, explicit = true) {
+        if (this.busy && !this.loading) { this.render(); return; }
+        const revision = ++this.selectionRevision;
+        this.restored = true;
+        if (explicit) this.remember(value === 'studio' ? 'studio' : 'standard');
+        if (value !== 'studio') { this.loading=false;this.busy=false;this.engine.soundSet='standard';this.message='STANDARD：追加ダウンロード不要';this.render();return; }
+        this.loading=true;
         this.busy=true;this.message='保存済み音源を確認・読み込み中（STANDARDで演奏できます）';this.render();
         try {
             this.engine.init();
@@ -3548,17 +3693,20 @@ class StudioLibrary {
             const buffers=new Map();
             for (const row of STUDIO_MANIFEST.samples) {
                 const data=await this.store('readonly',s=>s.get(this.key(row)));
+                if (revision !== this.selectionRevision) return;
                 await this.verify(row,data);
                 if (this.engine.studioBank.ready && this.engine.studioBank.buffers.has(row.id)) buffers.set(row.id,this.engine.studioBank.buffers.get(row.id));
                 else await this.decode(row,data,buffers);
             }
+            if (revision !== this.selectionRevision) return;
             this.engine.studioBank.buffers=buffers; this.engine.studioBank.ready=true;
-            this.engine.soundSet='studio';this.available=true;this.message='STUDIO BASIC：新しい発音から適用';
-        } catch(error) { this.fail(error); }
-        finally { this.busy=false;this.render(); }
+            this.engine.soundSet='studio';this.available=true;this.failed=false;this.message='STUDIO BASIC：新しい発音から適用';
+        } catch(error) { if (revision === this.selectionRevision) this.fail(error); }
+        finally { if (revision === this.selectionRevision) { this.loading=false;this.busy=false;this.render(); } }
     }
     async remove() {
         if (this.busy) return;
+        ++this.selectionRevision;this.restored=true;this.remember('standard');
         this.busy=true;this.engine.soundSet='standard';this.render();
         try {
             await this.store('readwrite',s=>s.clear());
@@ -3569,9 +3717,17 @@ class StudioLibrary {
     }
     render() {
         const select=document.getElementById('sound-set'); if (!select) return;
-        select.value=this.engine.soundSet;select.disabled=this.busy;
+        select.value=this.loading ? 'studio' : this.engine.soundSet;select.disabled=this.busy && !this.loading;
         document.getElementById('studio-option').disabled=!this.available;
-        document.getElementById('studio-install').disabled=this.busy;
+        const install=document.getElementById('studio-install');
+        install.disabled=this.busy;install.hidden=this.available && !this.busy;
+        install.textContent=this.busy ? (this.loading ? '保存音源を読み込み中…' : '導入中…') : 'STUDIO BASICを導入（約110 MB）';
+        const switchButton=document.getElementById('studio-switch');
+        switchButton.hidden=!this.available || this.engine.soundSet==='studio' || this.busy;
+        const status=this.busy ? (this.loading ? 'STUDIO BASIC 読み込み中' : 'STUDIO BASIC 導入中') : this.available ? (this.engine.soundSet==='studio' ? 'STUDIO BASIC 使用中' : 'STUDIO BASIC 導入済み · STANDARD使用中') : 'STANDARD 使用中 · STUDIO BASIC 未導入／利用不可';
+        document.getElementById('studio-heading').textContent=status;
+        const entry=document.getElementById('sound-library-entry');
+        if(entry) entry.textContent=this.available || this.busy ? status : 'STANDARD 使用中 · STUDIO BASIC 高品質ピアノ・ベース・ドラム 約110MBを導入';
         document.getElementById('studio-delete').disabled=this.busy;
         document.getElementById('studio-status').textContent=this.message;
         const progress=document.getElementById('studio-progress');
@@ -3598,7 +3754,17 @@ class AudioEngine {
         this.studioRenderer = new StudioSampleRenderer(this, this.studioBank);
         this.onSoundSetError = null;
         this.pianoProfile = "improved";
+        this.kickProfile = "original";
         this.manualReleaseSeconds = {...STUDIO_MANUAL_RELEASE_SECONDS};
+    }
+
+    setKickProfile(profile) {
+        if(!Object.hasOwn(KICK_PROFILES,profile))return false;
+        this.kickProfile=profile;
+        // Reconfigure only queued, not yet audible kick nodes; do not reschedule music.
+        for(const voice of this.voices.values())if(voice.backend==='studio'&&voice.instrument==='kick'&&
+            !voice.releaseRequested&&voice.startTime>this.ctx.currentTime)this.studioRenderer.configureKick(voice,profile);
+        return true;
     }
 
     fallbackToStandard(error) {
@@ -4139,6 +4305,152 @@ class PianoComparison {
         } catch(error) { if(ticket===this.generation)status.textContent='比較音を再生できませんでした：'+error.message; }
     }
 }
+// PHASE2 LEVEL COMPARISON BEGIN: candidates apply only inside isolated audition graphs.
+const STUDIO_LEVEL_CANDIDATES = Object.freeze({
+    standard:Object.freeze({label:'STANDARD',trim:Object.freeze({melody:1,chord:1,bass:1,drums:1})}),
+    current:Object.freeze({label:'現行STUDIO',trim:Object.freeze({melody:1,chord:1,bass:1,drums:1})}),
+    candidate:Object.freeze({label:'調整案A STUDIO',trim:Object.freeze({melody:10**(6/20),chord:10**(6/20),bass:10**(9/20),drums:10**(3/20)})})
+});
+class StudioLevelComparison extends PianoComparison {
+ constructor(engine){super(engine);this.rendering=Promise.resolve();}
+ setup(set='studio',seconds=8,trim={melody:1,chord:1,bass:1,drums:1},kick='original'){
+  const ctx=new OfflineAudioContext(2,Math.ceil(seconds*48000),48000),e=new AudioEngine();e.ctx=ctx;e.initialized=true;e.resume=()=>{};
+  e.master=ctx.createGain();e.master.gain.value=.5;e.master.connect(ctx.destination);
+  e.partOutputs=Object.fromEntries(['melody','chord','bass','drums'].map(p=>{const g=ctx.createGain();g.gain.value=set==='studio'?trim[p]:1;g.connect(e.master);return[p,g]}));
+  e.soundSet=set;e.kickProfile=kick;e.studioBank.buffers=this.engine.studioBank.buffers;e.studioBank.ready=true;return e;
+ }
+ async render(profile,kind,midi=60,velocity=.3){
+  if(!Object.hasOwn(STUDIO_LEVEL_CANDIDATES,profile)||!['melody','chord','bass','kick','snare','hat','clap','drums','full','fullMelody','fullChord','tap','hold','overlap'].includes(kind))throw Error('Unknown comparison');
+  const set=profile==='standard'?'standard':'studio',trim=STUDIO_LEVEL_CANDIDATES[profile].trim;
+  const e=this.setup(set,12,trim,'original'),releases=new Map();
+  const held=(midi,vel,part,t,hold)=>{const g=e.createVoiceGroup(part==='chord'?'manual-left':'manual-right',{},true);e.startTone(NOTE_NAMES[midi%12],Math.floor(midi/12)-1,.8,'piano',vel,g,true,t);const frame=Math.floor((t+hold)*48000/128)*128,key=frame/48000;if(!releases.has(key))releases.set(key,[]);releases.get(key).push(g);};
+  const chord=(t,notes=[48,52,55,59],hold=.5)=>notes.forEach(n=>held(n,.18,'chord',t,hold));
+  const bass=t=>e.scheduleAccompanimentEvent({owner:'accompaniment',part:'bass',harmony:{root:'C'},relativeSemitones:0,duration:.45,velocity:.35},t);
+  const drum=(name,t)=>e[{kick:'playKick',snare:'playSnare',hat:'playHat',clap:'playClap'}[name]](t,{});
+  if(kind==='melody')held(midi,velocity,'melody',0,.6);
+  else if(kind==='chord')chord(0);
+  else if(kind==='bass')bass(0);
+  else if(['kick','snare','hat','clap'].includes(kind))drum(kind,0);
+  else if(kind==='drums')for(let i=0;i<16;i++){const t=i/3;drum('hat',t);if(i%4===0)drum('kick',t);if(i%4===2){drum('snare',t);drum('clap',t);}}
+  else if(kind==='tap')for(let i=0;i<24;i++)held([60,62,64][i%3],.3,'melody',i*.1,.03);
+  else if(kind==='hold')held(48,.3,'melody',0,8);
+  else if(kind==='overlap')for(let i=0;i<16;i++){const t=i*.16;chord(t,[48,52,55,59,62,66],.1);held(72+i%5,.3,'melody',t,.08);}
+  else { // Controlled 2-bar POP_8 comparison, 90 BPM. Existing rhythm and voicing data.
+   const rhythm=RHYTHMS.POP_8;
+   for(let bar=0;bar<2;bar++){
+    const harmony={root:bar?'F':'C',quality:'Maj7'};
+    for(const step of rhythm.chordHits){const t=(bar*8+step)/3;
+     e.scheduleAccompanimentEvent({owner:'accompaniment',part:'chord',harmony,duration:.8,velocity:.18},t);
+     e.scheduleAccompanimentEvent({owner:'accompaniment',part:'bass',harmony,relativeSemitones:0,duration:.45,velocity:.35},t);
+    }
+    for(const [name,steps] of Object.entries(rhythm.drum))for(const step of steps)drum(name,(bar*8+step)/3);
+   }
+   if(kind==='fullMelody')for(let i=0;i<16;i++)held([60,64,67,72,71,67,65,64][i%8],.3,'melody',i/3,.25);
+   if(kind==='fullChord')for(let i=0;i<8;i++)chord(i*2/3,[48,52,55,59,62],.5);
+  }
+  const scheduled=e.voices.size;
+  const waits=[...releases].map(async([t,groups])=>{await e.ctx.suspend(t);for(const g of groups)e.releaseVoiceGroup(g);await e.ctx.resume();});
+  const buffer=await e.ctx.startRendering();await Promise.all(waits);return {buffer,scheduled,remaining:e.voices.size,profile,kind};
+ }
+ async play(profile){
+  this.stop();pianoComparison.stop();kickComparison.stop();const ticket=this.generation;
+  const status=document.getElementById('studio-level-status');
+  if(!this.engine.studioBank.ready){status.textContent='STUDIOを導入して一度選択すると比較できます。';return;}
+  const kind=document.getElementById('studio-level-scene').value;
+  const midi=Number(document.getElementById('piano-comparison-note').value),velocity=Number(document.getElementById('piano-comparison-velocity').value);
+  const matched=document.getElementById('studio-level-match').checked;
+  const previous=this.rendering;let complete;this.rendering=new Promise(r=>complete=r);
+  status.textContent='同じ条件の比較音を準備しています…';
+  try{
+   await this.engine.userActivate();await previous;if(ticket!==this.generation)return;
+   const rendered=await this.render(profile,kind,midi,velocity);if(ticket!==this.generation)return;
+   const peak=kickComparison.peak(rendered.buffer);let level=1;
+   if(matched){
+    const reference=profile==='current'?rendered:await this.render('current',kind,midi,velocity);if(ticket!==this.generation)return;
+    const own=await kickComparison.loudness(rendered.buffer),target=await kickComparison.loudness(reference.buffer);
+    level=Math.min(target/Math.max(own,1e-9),.8/Math.max(peak,1e-9));
+   }
+   if(ticket!==this.generation||!this.engine.studioBank.ready)return;
+   const ctx=this.engine.ctx,source=ctx.createBufferSource(),gain=ctx.createGain();source.buffer=rendered.buffer;gain.gain.value=level;
+   source.connect(gain);gain.connect(ctx.destination);const record={source,gain};this.playing=record;
+   source.onended=()=>{source.disconnect();gain.disconnect();if(this.playing===record)this.playing=null;};source.start();
+   this.last={profile,kind,midi,velocity,matched,level,peak,scheduled:rendered.scheduled,remaining:rendered.remaining};
+   status.textContent=STUDIO_LEVEL_CANDIDATES[profile].label+' · '+(matched?'音量合わせON（現行STUDIO基準の近似）':'音量合わせOFF（演奏Gain）')+' · 通常演奏の設定は変わりません。';
+  }catch(error){if(ticket===this.generation)status.textContent='比較できませんでした：'+error.message;}
+  finally{complete();}
+ }
+}
+// PHASE2 LEVEL COMPARISON END.
+
+// Separate audition clock/output: never edits preset, harmony, rhythm or performance Gain.
+class KickComparison {
+    constructor(engine) {this.engine=engine;this.generation=0;this.playing=null;this.last=null;this.rendering=Promise.resolve();}
+    stop() {
+        this.generation++;
+        if(!this.playing)return;
+        const {source,gain}=this.playing,now=this.engine.ctx.currentTime;
+        gain.gain.cancelScheduledValues(now);gain.gain.setValueAtTime(gain.gain.value,now);
+        gain.gain.linearRampToValueAtTime(0,now+.02);source.stop(now+.025);this.playing=null;
+    }
+    times(pattern,bpm) {
+        const patterns={single:[0],slow:[0,2],eight:[0,2,2.5],sixteen:[0,.75,2,2.75,3.5],hiphop:[0,1.75,2.5],repeat:Array.from({length:16},(_,i)=>i/4)};
+        if(!Object.hasOwn(patterns,pattern)||!Number.isFinite(bpm)||bpm<40||bpm>180)throw Error('比較BPMは40〜180にしてください');
+        return pattern==='single'?[0]:[...patterns[pattern],...patterns[pattern].map(t=>t+4)].map(t=>t*60/bpm);
+    }
+    async render(profile,velocity,times=[0]) {
+        if(!Object.hasOwn(KICK_PROFILES,profile)||![.18,.30,.45].includes(velocity))throw Error('比較設定を確認してください');
+        const selected=this.engine.studioBank.select('kick',0,Math.min(1,velocity/.45));
+        const seconds=Math.max(...times)+selected.buffer.duration+.05;
+        const ctx=new OfflineAudioContext(2,Math.ceil(seconds*48000),48000);
+        const e=new AudioEngine();e.ctx=ctx;e.initialized=true;e.resume=()=>{};
+        e.master=ctx.createGain();e.master.gain.value=.5;e.master.connect(ctx.destination);
+        e.partOutputs=Object.fromEntries(['melody','chord','bass','drums'].map(p=>{const g=ctx.createGain();g.connect(e.master);return[p,g]}));
+        e.soundSet='studio';e.kickProfile=profile;e.studioBank.buffers=this.engine.studioBank.buffers;e.studioBank.ready=true;
+        for(const now of times)e.studioRenderer.drum('kick',now,{velocity});
+        return {buffer:await ctx.startRendering(),sample:selected.row.id};
+    }
+    peak(buffer) {let peak=0;for(let ch=0;ch<buffer.numberOfChannels;ch++)for(const x of buffer.getChannelData(ch))peak=Math.max(peak,Math.abs(x));return peak;}
+    async loudness(buffer) {
+        // Approximation, NOT LUFS: remove subsonic energy, weight upper bands, measure max 400 ms RMS.
+        const ctx=new OfflineAudioContext(buffer.numberOfChannels,buffer.length,buffer.sampleRate);
+        const src=ctx.createBufferSource(),hp=ctx.createBiquadFilter(),shelf=ctx.createBiquadFilter();
+        src.buffer=buffer;hp.type='highpass';hp.frequency.value=40;hp.Q.value=.707;
+        shelf.type='highshelf';shelf.frequency.value=1500;shelf.gain.value=4;
+        src.connect(hp);hp.connect(shelf);shelf.connect(ctx.destination);src.start();
+        const weighted=await ctx.startRendering(),windowSize=Math.round(.4*buffer.sampleRate);
+        let sum=0,best=0;
+        const channels=Array.from({length:weighted.numberOfChannels},(_,ch)=>weighted.getChannelData(ch));
+        for(let i=0;i<weighted.length;i++){
+            for(const a of channels){sum+=a[i]*a[i];if(i>=windowSize)sum-=a[i-windowSize]*a[i-windowSize];}
+            best=Math.max(best,sum);
+        }
+        return Math.sqrt(best/(windowSize*channels.length));
+    }
+    async play(profile) {
+        this.stop();const ticket=this.generation,status=document.getElementById('kick-comparison-status');
+        if(!this.engine.studioBank.ready||this.engine.soundSet!=='studio'){status.textContent='STUDIO BASICを選択してから試聴してください。';return;}
+        const velocity=Number(document.getElementById('kick-velocity').value),bpm=Number(document.getElementById('kick-bpm').value);
+        const pattern=document.getElementById('kick-pattern').value,matched=document.getElementById('kick-match').checked;
+        status.textContent='比較音を準備しています…';
+        const previous=this.rendering;let complete;this.rendering=new Promise(resolve=>{complete=resolve;});
+        try {
+            await this.engine.userActivate();await previous;if(ticket!==this.generation)return;
+            const times=this.times(pattern,bpm);
+            const single=await this.render(profile,velocity);if(ticket!==this.generation)return;
+            const reference=profile==='original'?single:await this.render('original',velocity);if(ticket!==this.generation)return;
+            const rendered=pattern==='single'?single:await this.render(profile,velocity,times);if(ticket!==this.generation)return;
+            const own=await this.loudness(single.buffer),target=await this.loudness(reference.buffer),peak=this.peak(rendered.buffer);
+            const level=matched?Math.min(target/Math.max(own,1e-9),4,.8/Math.max(peak,1e-9)):1;
+            if(ticket!==this.generation||!this.engine.studioBank.ready||this.engine.soundSet!=='studio')return;
+            const ctx=this.engine.ctx,source=ctx.createBufferSource(),gain=ctx.createGain();source.buffer=rendered.buffer;gain.gain.value=level;
+            source.connect(gain);gain.connect(ctx.destination);const record={source,gain};this.playing=record;
+            source.onended=()=>{source.disconnect();gain.disconnect();if(this.playing===record)this.playing=null;};source.start();
+            this.last={profile,velocity,pattern,bpm,sample:rendered.sample,peak,weightedRMS:own,referenceWeightedRMS:target,level,matched};
+            status.textContent=KICK_PROFILES[profile].label+'／'+(matched?'比較音量補正 '+(20*Math.log10(level)).toFixed(1)+' dB':'演奏時と同じGain')+'。伴奏の設定は変わりません。';
+        } catch(error) {if(ticket===this.generation)status.textContent='比較音を再生できませんでした：'+error.message;}
+        finally {complete();}
+    }
+}
 function changePianoProfile() {
     audio.pianoProfile=document.getElementById('piano-profile').value;
     for (const part of ['melody','chord']) document.getElementById('piano-release-'+part).disabled=audio.pianoProfile==='baseline';
@@ -4152,6 +4464,15 @@ function changePianoRelease(part) {
 const audio = new AudioEngine();
 const studioLibrary = new StudioLibrary(audio);
 const pianoComparison = new PianoComparison(audio);
+const kickComparison = new KickComparison(audio);
+const studioLevelComparison = new StudioLevelComparison(audio);
+document.addEventListener('visibilitychange',()=>{if(document.hidden)studioLevelComparison.stop();});
+window.addEventListener('pagehide',()=>studioLevelComparison.stop());
+for(const id of ['sound-set','studio-delete'])document.getElementById(id).addEventListener(id==='sound-set'?'change':'click',()=>studioLevelComparison.stop());
+for(const id of ['piano-quality-controls','kick-comparison-controls'])document.getElementById(id).addEventListener('click',event=>{if(event.target.closest('button')&&!event.target.closest('#studio-level-controls'))studioLevelComparison.stop();});
+document.addEventListener('visibilitychange',()=>{if(document.hidden)kickComparison.stop();});
+window.addEventListener('pagehide',()=>kickComparison.stop());
+for(const id of ['sound-set','studio-delete'])document.getElementById(id).addEventListener(id==='sound-set'?'change':'click',()=>kickComparison.stop());
 // Cancellation is distinct from an ordinary finger release; pointer ownership is unchanged.
 document.addEventListener('pointercancel', event => {
     const group=audio.groups.get(manualPointers.get(event.pointerId)?.groupId);
@@ -4728,7 +5049,7 @@ function changeTimbre() {
 function populateCatalogLayers() {
     const select = document.getElementById("catalog-layer");
     select.innerHTML = "";
-    Object.keys(CHORD_TOY_CATALOG).forEach(layer => {
+    ["ジャンル", "雰囲気", "理論"].forEach(layer => {
         const opt = document.createElement("option");
         opt.value = layer;
         opt.textContent = layer;
@@ -5157,6 +5478,7 @@ function deriveMarkerTemporalOpacity(playback, position, playing) {
 function applyFutureMarkerHalo(halo, opacity) {
     const convergence = Math.max(0, Math.min(1, (opacity - 0.10) / 0.90));
     halo.style.opacity = String(opacity);
+    halo.style.setProperty("--halo-opacity", String(opacity));
     halo.style.setProperty("--halo-scale", String(1.8 - 0.78 * convergence));
     halo.style.setProperty("--halo-border-width", `${2 - convergence}px`);
     // Glow blur radius, rather than filtering the marker and blurring its core.
@@ -5574,6 +5896,12 @@ function renderBeatIndicator() {
 // R7-4 BEGIN: UI-only sheet and catalog presentation. No input/audio/clock hooks.
 const uiState = { settingsSheetOpen: false, explorerStage: "category", layer: "", category: "", trigger: null, savedOverflow: "" };
 
+function openSoundLibrary(trigger) {
+    openSettingsSheet(trigger);
+    document.getElementById('sound-library').scrollIntoView({block: 'start'});
+    document.getElementById('sound-set').focus?.({preventScroll: true});
+}
+
 function openSettingsSheet(trigger) {
     if (!uiState.settingsSheetOpen) {
         uiState.trigger = trigger || document.activeElement;
@@ -5589,7 +5917,7 @@ function openSettingsSheet(trigger) {
     document.getElementById("settings-backdrop").dataset.open = "true";
     for (const id of ["settings-toggle", "current-preset"]) document.getElementById(id).setAttribute("aria-expanded", "true");
     const preset = getPreset();
-    document.getElementById("explorer-current").textContent = "現在：" + preset.name + " — " + (preset.description || "");
+    document.getElementById("explorer-current").textContent = "使用中：" + preset.name + " — " + (preset.description || "");
     renderPresetExplorer();
     document.getElementById("advanced-controls").scrollTop = 0;
     document.getElementById("settings-close").focus?.({ preventScroll: true });
@@ -5651,17 +5979,17 @@ function renderPresetExplorer() {
     if (uiState.explorerStage !== "category") button(path, uiState.layer, "", uiState.explorerStage === "subcategory", () => showExplorerStage("subcategory"));
     if (uiState.explorerStage === "preset") button(path, uiState.category, "", true, () => showExplorerStage("preset"));
     if (uiState.explorerStage === "category") {
-        for (const layer of Object.keys(CHORD_TOY_CATALOG)) button(list, layer, layer === state.catalogLayer ? "現在の分類" : "", layer === state.catalogLayer,
+        for (const layer of ["ジャンル", "雰囲気", "理論"]) button(list, layer, "分類を開く →", false,
             () => showExplorerStage("subcategory", layer, layer === state.catalogLayer ? state.catalogCategory : Object.keys(CHORD_TOY_CATALOG[layer])[0]));
     } else if (uiState.explorerStage === "subcategory") {
-        for (const category of Object.keys(CHORD_TOY_CATALOG[uiState.layer])) button(list, category, "", uiState.layer === state.catalogLayer && category === state.catalogCategory,
+        for (const category of Object.keys(CHORD_TOY_CATALOG[uiState.layer])) button(list, category, "候補を見る →", false,
             () => showExplorerStage("preset", uiState.layer, category));
     } else {
         // Same catalog membership as populatePresets; presentation only, never reset transport while browsing.
         const matched = PRESETS.filter(p => (p.tags || []).some(tag => tag[0] === uiState.layer && tag[1] === uiState.category));
         const fallback = PRESETS.filter(p => p.category === uiState.category || p.category === uiState.layer);
         for (const preset of matched.length ? matched : fallback.length ? fallback : PRESETS) {
-            const item = button(list, preset.name, preset.description, preset.id === state.presetId, () => selectExplorerPreset(preset.id));
+            const item = button(list, preset.name, (preset.id === state.presetId ? "使用中 · " : "タップして適用 · ") + preset.description, preset.id === state.presetId, () => selectExplorerPreset(preset.id));
             item.dataset.presetId = preset.id;
         }
     }
@@ -5673,7 +6001,7 @@ function selectExplorerPreset(id) {
     populateCatalogLayers();
     document.getElementById("preset-select").value = id;
     loadPresetFromUI();
-    document.getElementById("explorer-current").textContent = "現在：" + getPreset().name + " — " + (getPreset().description || "");
+    document.getElementById("explorer-current").textContent = "使用中：" + getPreset().name + " — " + (getPreset().description || "");
     renderPresetExplorer();
     [...document.getElementById("explorer-list").children].find(item => item.dataset.presetId === id)?.focus?.({ preventScroll: true });
 }
@@ -5754,6 +6082,8 @@ function startAutoPlay() {
 }
 
 function stopAutoPlay() {
+    studioLevelComparison.stop();
+    kickComparison.stop();
     const wasPlaying = state.autoPlaying;
     if (state.mode !== "FREE" && state.autoPlaying) {
         commitPresetClockPosition();
